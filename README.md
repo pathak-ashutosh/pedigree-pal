@@ -36,6 +36,6 @@ information.
 - A system that can be integrated with existing pet microchip technology to facilitate easy pet registration and verification of pedigree information.
 
 ## References
-[1] “What information is stored on a pet microchip?" prompt. ChatGPT, Mar. 2023, OpenAI GPT-4, 04 Apr. 2023, https://chat.openai.com/chat. 
-[2] “Give a task break down of this project” prompt. ChatGPT, Mar. 2023, OpenAI GPT-4, 04 Apr. 2023, https://chat.openai.com/chat. 
+[1] “What information is stored on a pet microchip?" prompt. ChatGPT, Mar. 2023, OpenAI GPT-4, 04 Apr. 2023, https://chat.openai.com/chat.  
+[2] “Give a task break down of this project” prompt. ChatGPT, Mar. 2023, OpenAI GPT-4, 04 Apr. 2023, https://chat.openai.com/chat.  
 [3] “List major risks in this project” prompt. ChatGPT, Mar. 2023, OpenAI GPT-4, 04 Apr. 2023, https://chat.openai.com/chat.
