@@ -1,0 +1,26 @@
+{
+  "name": "pedigree-pal",
+  "version": "1.0.0",
+  "description": "PedigreePal aims to develop a decentralized, secure, and easily accessible system for storing and verifying dog pedigree (ancestry) and ownership information. By leveraging blockchain technology and integrating it with existing pet microchip technology, we will create a user-friendly dApp (decentralized application) that will allow users to access a dog's pedigree information and prove the authenticity of their breed, regardless of location or kennel club membership. The system will also enable veterinarians to access owner information in case a dog is lost or requires medical attention.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/pathak-ashutosh/pedigree-pal.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pathak-ashutosh/pedigree-pal/issues"
+  },
+  "homepage": "https://github.com/pathak-ashutosh/pedigree-pal#readme",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "hardhat": "^2.14.0"
+  },
+  "dependencies": {
+    "shrinkpack": "^0.20.0"
+  }
+}

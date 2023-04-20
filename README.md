@@ -1,6 +1,17 @@
 # PedigreePal
 #### Blockchain-based Dog Pedigree and Ownership Verification System
 
+## Getting Started
+- Install Node.js (version 18+), if you don't already have it (see [this Hardhat link](https://hardhat.org/tutorial/setting-up-the-environment) for directions).
+- With `npm` now installed, install the `shrinkpack` package **as a global package**:
+    `npm install --global shrinkpack`
+    - [Shrinkpack](https://www.npmjs.com/package/shrinkpack) allows us to maintain our `node_modules` with source control, while eliminating the risk of environment-based dependencies.
+
+## Building
+- Any time you modify the dependencies list (like if you add a new hardhat plugin), run `shrinkwrap` on the repo and commit these changes:
+    `shrinkwrap pedigree-pal`
+
+## Summary
 PedigreePal aims to develop a decentralized, secure, and easily accessible system for storing and verifying dog pedigree (ancestry) and ownership information. By leveraging blockchain technology and integrating it with existing pet microchip technology, we will create a user-friendly dApp (decentralized application) that will allow users to access a dog's pedigree information and prove the authenticity of their breed, regardless of location or kennel club membership. The system will also enable veterinarians to access owner information in case a dog is lost or requires medical attention.
 
 Currently, there is no decentralized, secure, and accessible solution to verify a dog's pedigree and ownership information. Registration with traditional kennel clubs can be expensive and time-consuming, and the authenticity of a dog's pedigree can sometimes be falsified by unethical breeders. Currently, pet microchips are used to tie a dog to: 1. a unique identifier that can be added to a pet registry database, 2. the pet’s name and description (including breed, color, age, etc.), 3. the pet owner’s contact information, and 4. the veterinarian’s contact information [1]. A secure and transparent system is needed to provide accurate and reliable pedigree, identifier and ownership information for pet owners, breeders, and other stakeholders.

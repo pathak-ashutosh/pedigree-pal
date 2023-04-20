@@ -1,0 +1,79 @@
+{
+  "name": "shrinkpack",
+  "description": "Fast, resilient, reproducible builds with npm install.",
+  "version": "0.20.0",
+  "author": "Jamie Mason (https://github.com/JamieMason)",
+  "bin": {
+    "shrinkpack": "dist/bin.js"
+  },
+  "bugs": "https://github.com/JamieMason/shrinkpack/issues",
+  "contributors": [
+    "Andrew Levine (https://github.com/DrewML)",
+    "Chris Wheatley (https://github.com/swirlycheetah)",
+    "David Cook (https://github.com/divergentdave)",
+    "Dmytro Tolstyi (https://github.com/GitAngel)",
+    "Dylan Piercey (https://github.com/DylanPiercey)",
+    "Emil Sågfors (https://github.com/lime)",
+    "Jason Hewison (https://github.com/ChunkySamurai)",
+    "Kirill Fomichev (https://github.com/fanatid)",
+    "Mark Erikson (https://github.com/markerikson)",
+    "Scott Sidwell (https://github.com/5id)",
+    "Zlatan Vasović (https://github.com/zdroid)"
+  ],
+  "dependencies": {
+    "commander": "8.3.0",
+    "gunzip-maybe": "1.4.2",
+    "pacote": "12.0.2",
+    "picocolors": "1.0.0",
+    "ssri": "8.0.1"
+  },
+  "devDependencies": {
+    "@types/gunzip-maybe": "1.4.0",
+    "@types/node": "17.0.5",
+    "@types/pacote": "11.1.2",
+    "@types/ssri": "7.1.1",
+    "@typescript-eslint/eslint-plugin": "5.8.1",
+    "@typescript-eslint/parser": "5.8.1",
+    "eslint": "8.5.0",
+    "eslint-plugin-import": "2.25.3",
+    "prettier": "2.5.1",
+    "typescript": "4.5.4"
+  },
+  "engines": {
+    "node": ">=12.0.0",
+    "npm": ">=7.0.0",
+    "yarn": "use-npm"
+  },
+  "files": [
+    "dist"
+  ],
+  "homepage": "https://github.com/JamieMason/shrinkpack",
+  "keywords": [
+    "ci",
+    "cli",
+    "dependencies",
+    "dependency-manager",
+    "dependency",
+    "install",
+    "lockfile",
+    "npm",
+    "offline-mirror",
+    "package-json",
+    "package-lock",
+    "package",
+    "pnpm",
+    "shrinkwrap",
+    "yarn"
+  ],
+  "license": "MIT",
+  "main": "dist/index.js",
+  "repository": "JamieMason/shrinkpack",
+  "scripts": {
+    "build": "rm -rf ./dist && tsc --project .",
+    "format": "npm run format:prettier && npm run format:eslint",
+    "format:eslint": "eslint --ext .ts . --fix",
+    "format:prettier": "prettier --write ./src/**/*.ts",
+    "lint": "eslint --ext .ts .",
+    "prepack": "npm run build"
+  }
+}
