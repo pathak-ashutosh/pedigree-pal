@@ -15,9 +15,9 @@ information.
 - Ensure sensitive information can only be accessed by authorized users.
 
 ## Tasks [2]
-- [ ] Conduct preliminary research to understand how blockchain technology can be used to store and verify data.
-- [ ] Learn Solidity, a programming language used to develop smart contracts that run on Ethereum, and use it to develop smart contracts to ensure the authenticity and immutability of the information.
-  - [ ] Ensure the system can encrypt and protect sensitive information stored on the blockchain, such as owner contact details.
+- [x] Conduct preliminary research to understand how blockchain technology can be used to store and verify data.
+- [x] Learn Solidity, a programming language used to develop smart contracts that run on Ethereum, and use it to develop smart contracts to ensure the authenticity and immutability of the information.
+  - [x] Ensure the system can encrypt and protect sensitive information stored on the blockchain, such as owner contact details.
   - [ ] Authorized users (registered breeders, veterinarians, animal shelters, etc.) must be able to decrypt this sensitive information, while preventing access to unauthorized users.
 - [ ] Develop a user-friendly dApp that allows users to access and verify dog pedigree information.
     - [ ] Ensure the dApp is easy to use and can be accessed from any device.
