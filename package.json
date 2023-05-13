@@ -27,6 +27,7 @@
   "homepage": "https://github.com/pathak-ashutosh/pedigree-pal#readme",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "dotenv": "^16.0.3",
     "hardhat": "^2.14.0"
   }
 }
