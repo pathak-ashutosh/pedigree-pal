@@ -1,48 +1,40 @@
-pragma solidity ^0.8.18;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.0;
 
 contract PedigreePal {
+    // 0xc5a0be0Ac448684c10956C31Bb4795Be9a5CeD29 - deployed contract address
+
+    address public owner;
+
+    mapping (uint => Dog) public dogs;
+    uint public dogId;
+    
     struct Dog {
-        uint256 id;
+        uint id;
+        string name;
+        uint age;
         string breed;
-        uint256 dateOfBirth;
         string sex;
-        string[] ancestry;
+        uint mother;
+        uint father;
+        address owner;
     }
 
-    mapping(uint256 => Dog) public dogs;
-    uint256 public nextDogId;
-
-    function registerDog(
-        string memory _breed,
-        uint256 _dateOfBirth,
-        string memory _sex,
-        string[] memory _ancestry
-    ) public {
-        Dog memory newDog = Dog({
-            id: nextDogId,
-            breed: _breed,
-            dateOfBirth: _dateOfBirth,
-            sex: _sex,
-            ancestry: _ancestry
-        });
-
-        dogs[nextDogId] = newDog;
-        nextDogId++;
+    constructor() {
+        owner = msg.sender;
     }
 
-    function getDog(uint256 _dogId)
-        public
-        view
-        returns (
-            uint256 id,
-            string memory breed,
-            uint256 dateOfBirth,
-            string memory sex,
-            string[] memory ancestry
-        )
-    {
-        Dog memory dog = dogs[_dogId];
-        return (dog.id, dog.breed, dog.dateOfBirth, dog.sex, dog.ancestry);
+    modifier onlyOwner() {
+        require(owner == msg.sender, "You are not the owner");
+        _;
+    }
+
+    function registerDog(string memory _name, string calldata _breed, string calldata _sex, uint _age, uint _mother, uint _father) public {
+        dogs[dogId] = Dog(dogId, _name, _age, _breed, _sex, _mother, _father, owner);
+        dogId++;
+    }
+
+    function retreiveDog(uint _id) public view returns (Dog memory) {
+        return dogs[_id];
     }
 }
-
