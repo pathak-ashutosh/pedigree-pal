@@ -11,20 +11,30 @@ import { React } from "react";
 // event, and when it receives it, it is going to update the state with the
 // dog's details.
 
-export function CheckDog({ checkDog }) {
+export function CheckDog({ getDogId }) {
     return (
         <div className="container">
             <div className="row justify-content-md-center">
                 <div className="col-12 text-center">
-                    <p>Enter </p>
-                    <input type="number" id="dogId" />
-                    <button
-                        className="btn btn-primary"
-                        type="button"
-                        onClick={checkDog}
-                    >
-                        Show Pedigree
-                    </button>
+                    <h1>Check Dog Pedigree</h1>
+                    <form
+                        onSubmit={(event) => {
+                            // This function just calls the registerDog callback with the form's data.
+                            event.preventDefault();
+
+                            const formData = new FormData(event.target);
+                            const dogId = formData.get("dogId");
+
+                            if (dogId) {
+                                getDogId(dogId);
+                            }
+                        }}>
+                        <p>Enter DogID </p>
+                        <input type="number" id="dogId" />
+                        <button className="btn btn-primary" type="submit">
+                            Show Pedigree
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

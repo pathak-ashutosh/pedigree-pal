@@ -19,6 +19,7 @@ contract PedigreePal {
         uint father;
         address owner;
     }
+    event Register(string _name, string _breed, string _sex, uint _age, uint _mother, uint _father);
 
     constructor() {
         owner = msg.sender;
@@ -32,9 +33,10 @@ contract PedigreePal {
     function registerDog(string memory _name, string calldata _breed, string calldata _sex, uint _age, uint _mother, uint _father) public {
         dogs[dogId] = Dog(dogId, _name, _age, _breed, _sex, _mother, _father, owner);
         dogId++;
+        emit Register(_name, _breed, _sex, _age, _mother, _father);
     }
 
-    function retreiveDog(uint _id) public view returns (Dog memory) {
+    function retrieveDog(uint _id) public view returns (Dog memory) {
         return dogs[_id];
     }
 }
