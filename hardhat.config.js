@@ -1,5 +1,6 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
+require("./tasks/faucet");
 
 const { API_URL, METAMASK_PRIVATE_KEY } = process.env;
 

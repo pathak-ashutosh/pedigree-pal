@@ -44,8 +44,8 @@ export class Dapp extends React.Component {
       networkError: undefined,
       txBeingSent: undefined,
 
-      registerDog: null,
-      checkDog: null,
+      register: null,
+      seePedigree: null,
 
       // The Dog's details
       dogId: undefined,
@@ -112,6 +112,32 @@ export class Dapp extends React.Component {
             </button>
           </div>
         </div>
+
+        <hr />
+
+        <div className="row">
+          <div className="col-12">
+            {/* 
+              Sending a transaction isn't an immediate action. You have to wait
+              for it to be mined.
+              If we are waiting for one, we show a message here.
+            */}
+            {this.state.txBeingSent && (
+              <WaitingForTransactionMessage txHash={this.state.txBeingSent} />
+            )}
+
+            {/* 
+              Sending a transaction can fail in multiple ways. 
+              If that happened, we show a message here.
+            */}
+            {this.state.transactionError && (
+              <TransactionErrorMessage
+                message={this._getRpcErrorMessage(this.state.transactionError)}
+                dismiss={() => this._dismissTransactionError()}
+              />
+            )}
+          </div>
+        </div>
         <div className="row mt-5">
           <div className="col">
             {this._renderMain()}
@@ -126,34 +152,27 @@ export class Dapp extends React.Component {
     // state. If no button has been clicked yet, it asks the user to register
     // or check a dog. If the user has clicked one of the buttons, it loads
     // the corresponding component.
-    if (this.state.registerDog) {
+    if (this.state.register) {
       return (
         <RegisterDog
-          name={this.state.name}
-          breed={this.state.breed}
-          age={this.state.age}
-          sex={this.state.sex}
-          mother={this.state.mother}
-          father={this.state.father}
-          registerDog={() => this._registerDog()}
-          setName={(name) => this.setState({ name })}
-          setBreed={(breed) => this.setState({ breed })}
-          setAge={(age) => this.setState({ age })}
-          setSex={(sex) => this.setState({ sex })}
-          setMother={(mother) => this.setState({ mother })}
-          setFather={(father) => this.setState({ father })}
+          registerDog={() => this._registerDog(
+            this.state.name,
+            this.state.breed,
+            this.state.sex,
+            this.state.age,
+            this.state.mother,
+            this.state.father,
+          )}
         />
       );
     }
 
     // If the user has clicked the "Check Dog" button, we load the CheckDog
     // component into the page.
-    if (this.state.checkDog) {
+    if (this.state.seePedigree) {
       return (
         <CheckDog
-          dogId = {this.state.dogId}
-          checkDog={() => this._checkDog()}
-          setId={(dogId) => this.setState({ dogId })}
+          getDogId={() => this._checkDog()}
         />
       );
     }
@@ -162,41 +181,58 @@ export class Dapp extends React.Component {
   async _registerDogClicked() {
     // This method is called when the user clicks the "Register Dog" button.
     // We load the RegisterDog component into the page.
-    this.setState({ registerDog: true, checkDog: false });
+    this.setState({ register: true, seePedigree: false });
   }
 
   async _checkDogClicked() {
     // This method is called when the user clicks the "Check Dog" button.
     // We load the CheckDog component into the page.
-    this.setState({ registerDog: false, checkDog: true });
+    this.setState({ register: false, seePedigree: true });
   }
 
-  async _registerDog() { 
+  async _registerDog(name, breed, sex, age, mother, father) { 
     // This method is called when the user clicks the "Register Dog" button.
     // Send a transaction to the contract to register a dog.
-    
-    const dogDetails = {
-      name: this.state.name,
-      breed: this.state.breed,
-      age: this.state.age,
-      sex: this.state.sex,
-      mother: this.state.mother,
-      father: this.state.father,
-    };
 
     try {
-      const tx = await this._token.registerDog(dogDetails);
+      // If a transaction fails, we save that error in the component's state.
+      // We only save one such error, so before sending a second transaction, we
+      // clear it.
+      this._dismissTransactionError();
+
+      // We send the transaction, and save its hash in the Dapp's state. This
+      // way we can indicate that we are waiting for it to be mined.
+      const tx = await this._token.registerDog(name, breed, sex, age, mother, father);
       this.setState({ txBeingSent: tx.hash });
-      await tx.wait();
-      this.setState({ txBeingSent: undefined });
-    } catch (err) {
-      // If the error was a user rejection, don't show it.
-      if (err.code === ERROR_CODE_TX_REJECTED_BY_USER) {
+
+      // We use .wait() to wait for the transaction to be mined. This method
+      // returns the transaction's receipt.
+      const receipt = await tx.wait();
+
+      // The receipt, contains a status flag, which is 0 to indicate an error.
+      if (receipt.status === 0) {
+        // We can't know the exact error that made the transaction fail when it
+        // was mined, so we throw this generic one.
+        throw new Error("Transaction failed");
+      }
+
+      // If we got here, the transaction was successful.
+
+    } catch (error) {
+      // We check the error code to see if this error was produced because the
+      // user rejected a tx. If that's the case, we do nothing.
+      if (error.code === ERROR_CODE_TX_REJECTED_BY_USER) {
         return;
       }
 
-      console.error(err);
-      this.setState({ transactionError: err });
+      // Other errors are logged and stored in the Dapp's state. This is used to
+      // show them to the user, and for debugging.
+      console.error(error);
+      this.setState({ transactionError: error });
+    } finally {
+      // If we leave the try/catch, we aren't sending a tx anymore, so we clear
+      // this part of the state.
+      this.setState({ txBeingSent: undefined });
     }
   }
 
@@ -204,16 +240,15 @@ export class Dapp extends React.Component {
     // This method is called when the user clicks the "Check Dog" button.
     // Send a transaction to the contract to check a dog's details by its ID.
 
-    const dogId = this.state.dogId;
-
     try {
-      const dogDetails = await this._token.checkDog(dogId);
-      this.name = dogDetails.name;
-      this.breed = dogDetails.breed;
-      this.age = dogDetails.age;
-      this.sex = dogDetails.sex;
-      this.mother = dogDetails.mother;
-      this.father = dogDetails.father;
+      const dogDetails = await this._token.retrieveDog(this.state.dogId);
+      this.setState({ name: dogDetails.name });
+      this.setState({ breed: dogDetails.breed });
+      this.setState({ sex: dogDetails.sex });
+      this.setState({ age: dogDetails.age });
+      this.setState({ mother: dogDetails.mother });
+      this.setState({ father: dogDetails.father });
+      console.log(dogDetails);
     }
     catch (err) {
       console.error(err);
@@ -269,7 +304,7 @@ export class Dapp extends React.Component {
     // artifact. You can do this same thing with your contracts.
     this._token = new ethers.Contract(
       contractAddress.Token,
-      TokenArtifact,
+      TokenArtifact.abi,
       this._provider.getSigner(0)
     );
   }
