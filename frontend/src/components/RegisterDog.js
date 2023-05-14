@@ -1,6 +1,6 @@
 import React from "react";
 
-export function RegisterDog() {
+export function RegisterDog({ registerDog }) {
   return (
     <div className="container">
       <div className="row justify-content-md-center">
