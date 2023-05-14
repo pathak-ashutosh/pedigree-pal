@@ -15,6 +15,7 @@ import { NoWalletDetected } from "./NoWalletDetected";
 import { ConnectWallet } from "./ConnectWallet";
 import { Loading } from "./Loading";
 import { RegisterDog } from "./RegisterDog";
+import { CheckDog } from "./CheckDog";
 import { TransactionErrorMessage } from "./TransactionErrorMessage";
 import { WaitingForTransactionMessage } from "./WaitingForTransactionMessage";
 import { NoTokensMessage } from "./NoTokensMessage";
@@ -41,6 +42,19 @@ export class Dapp extends React.Component {
       selectedAddress: undefined,
       transactionError: undefined,
       networkError: undefined,
+      txBeingSent: undefined,
+
+      registerDog: null,
+      checkDog: null,
+
+      // The Dog's details
+      dogId: undefined,
+      name: undefined,
+      breed: undefined,
+      age: undefined,
+      sex: undefined,
+      mother: undefined,
+      father: undefined,
     };
 
     this.state = this.initialState;
@@ -69,46 +83,92 @@ export class Dapp extends React.Component {
         />
       );
     }
-
-    const [registerDog, setRegisterDog] = useState(null);
-  
-    const onClick = () => {
-      setRegisterDog(<RegisterDog registerDog={() => this._registerDog()} />);
-    };
+    
+    // If the token address hasn't loaded yet, we show a loading component.
+    if (!this.state.selectedAddress) {
+      return <Loading />;
+    }
 
     // If everything is loaded, we render the application with two buttons,
-    // one for registering a dog and one for seeing a dog's details.
+    // one for registering a dog and one for seeing a dog's details. On clicking
+    // these buttons, we load the corresponding components.
     return (
-      
-      // render two buttons here, one for registering a dog and one for seeing a dog's details
-
-      <div className="container">
-        <div className="row justify-content-md-center">
-          <div className="col-12 text-center">
-          <div className="col-6 p-4 text-center">
-            <p>Register a dog</p>
+      <div className="container-fluid mt-5 text-center">
+        <div className="row">
+          <div className="col">
             <button
               className="btn btn-primary"
-              type="button"
-              onClick={registerDog}
+              onClick={() => this._registerDogClicked()}
             >
               Register Dog
             </button>
           </div>
-          <div className="col-6 p-4 text-center">
-            <p>Check a dog's pedigree</p>
+          <div className="col">
             <button
               className="btn btn-primary"
-              type="button"
-              onClick={checkDog}
+              onClick={() => this._checkDogClicked()}
             >
               Check Dog
             </button>
           </div>
         </div>
+        <div className="row mt-5">
+          <div className="col">
+            {this._renderMain()}
+          </div>
+        </div>
       </div>
-      </div>
-    );
+      );
+    }
+
+  _renderMain() {
+    // This method renders the main content of the application, depending on its
+    // state. If no button has been clicked yet, it asks the user to register
+    // or check a dog. If the user has clicked one of the buttons, it loads
+    // the corresponding component.
+    if (this.state.registerDog) {
+      return (
+        <RegisterDog
+          name={this.state.name}
+          breed={this.state.breed}
+          age={this.state.age}
+          sex={this.state.sex}
+          mother={this.state.mother}
+          father={this.state.father}
+          registerDog={() => this._registerDog()}
+          setName={(name) => this.setState({ name })}
+          setBreed={(breed) => this.setState({ breed })}
+          setAge={(age) => this.setState({ age })}
+          setSex={(sex) => this.setState({ sex })}
+          setMother={(mother) => this.setState({ mother })}
+          setFather={(father) => this.setState({ father })}
+        />
+      );
+    }
+
+    // If the user has clicked the "Check Dog" button, we load the CheckDog
+    // component into the page.
+    if (this.state.checkDog) {
+      return (
+        <CheckDog
+          dogId = {this.state.dogId}
+          checkDog={() => this._checkDog()}
+          setId={(dogId) => this.setState({ dogId })}
+        />
+      );
+    }
+  }
+  
+  async _registerDogClicked() {
+    // This method is called when the user clicks the "Register Dog" button.
+    // We load the RegisterDog component into the page.
+    this.setState({ registerDog: true, checkDog: false });
+  }
+
+  async _checkDogClicked() {
+    // This method is called when the user clicks the "Check Dog" button.
+    // We load the CheckDog component into the page.
+    this.setState({ registerDog: false, checkDog: true });
   }
 
   async _registerDog() { 
@@ -119,6 +179,9 @@ export class Dapp extends React.Component {
       name: this.state.name,
       breed: this.state.breed,
       age: this.state.age,
+      sex: this.state.sex,
+      mother: this.state.mother,
+      father: this.state.father,
     };
 
     try {
@@ -139,20 +202,20 @@ export class Dapp extends React.Component {
 
   async _checkDog() {
     // This method is called when the user clicks the "Check Dog" button.
-    // It calls the contract to get the dog's details.
-    // We set the txBeingSent object with the information of the transaction,
-    // so we can show a "waiting for confirmation" message to the user.
-    try {
-      const tx = await this._token.checkDog();
-      this.setState({ txBeingSent: tx.hash });
-      await tx.wait();
-      this.setState({ txBeingSent: undefined });
-    } catch (err) {
-      // If the error was a user rejection, don't show it.
-      if (err.code === ERROR_CODE_TX_REJECTED_BY_USER) {
-        return;
-      }
+    // Send a transaction to the contract to check a dog's details by its ID.
 
+    const dogId = this.state.dogId;
+
+    try {
+      const dogDetails = await this._token.checkDog(dogId);
+      this.name = dogDetails.name;
+      this.breed = dogDetails.breed;
+      this.age = dogDetails.age;
+      this.sex = dogDetails.sex;
+      this.mother = dogDetails.mother;
+      this.father = dogDetails.father;
+    }
+    catch (err) {
       console.error(err);
       this.setState({ transactionError: err });
     }
