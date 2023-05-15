@@ -11,7 +11,7 @@ import { React } from "react";
 // event, and when it receives it, it is going to update the state with the
 // dog's details.
 
-export function CheckDog({ getDogId }) {
+export function CheckDog({ retrieveDog }) {
     return (
         <div className="container">
             <div className="row justify-content-md-center">
@@ -26,14 +26,14 @@ export function CheckDog({ getDogId }) {
                             const dogId = formData.get("dogId");
 
                             if (dogId) {
-                                getDogId(dogId);
+                                retrieveDog(dogId);
                             }
                         }}>
                         <p>Enter DogID </p>
-                        <input type="number" id="dogId" />
-                        <button className="btn btn-primary" type="submit">
-                            Show Pedigree
-                        </button>
+                        <input type="number" id="dogId" /><br/><br/>
+                        <div className="form-group">
+                            <input className="btn btn-primary" type="submit" value="Show Pedigree" />
+                        </div>
                     </form>
                 </div>
             </div>

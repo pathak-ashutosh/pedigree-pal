@@ -55,6 +55,7 @@ export class Dapp extends React.Component {
       sex: undefined,
       mother: undefined,
       father: undefined,
+      owner: undefined,
     };
 
     this.state = this.initialState;
@@ -141,6 +142,15 @@ export class Dapp extends React.Component {
         <div className="row mt-5">
           <div className="col">
             {this._renderMain()}
+            <b>
+                {this.state.dogId}
+                {this.state.name}
+                {this.state.breed}
+                {this.state.sex}
+                {this.state.age}
+                {this.state.mother}
+                {this.state.father}
+            </b>
           </div>
         </div>
       </div>
@@ -155,13 +165,20 @@ export class Dapp extends React.Component {
     if (this.state.register) {
       return (
         <RegisterDog
-          registerDog={() => this._registerDog(
-            this.state.name,
-            this.state.breed,
-            this.state.sex,
-            this.state.age,
-            this.state.mother,
-            this.state.father,
+          registerDog={(
+            name,
+            breed,
+            sex,
+            age,
+            mother,
+            father,
+            ) => this._registerDog(
+              name,
+              breed,
+              sex,
+              age,
+              mother,
+              father,
           )}
         />
       );
@@ -172,7 +189,7 @@ export class Dapp extends React.Component {
     if (this.state.seePedigree) {
       return (
         <CheckDog
-          getDogId={() => this._checkDog()}
+          retrieveDog={(dogId) => this._checkDog(dogId)}
         />
       );
     }
@@ -236,23 +253,53 @@ export class Dapp extends React.Component {
     }
   }
 
-  async _checkDog() {
+  async _checkDog(id) {
     // This method is called when the user clicks the "Check Dog" button.
     // Send a transaction to the contract to check a dog's details by its ID.
 
     try {
-      const dogDetails = await this._token.retrieveDog(this.state.dogId);
-      this.setState({ name: dogDetails.name });
-      this.setState({ breed: dogDetails.breed });
-      this.setState({ sex: dogDetails.sex });
-      this.setState({ age: dogDetails.age });
-      this.setState({ mother: dogDetails.mother });
-      this.setState({ father: dogDetails.father });
-      console.log(dogDetails);
-    }
-    catch (err) {
-      console.error(err);
-      this.setState({ transactionError: err });
+      // We clear any transaction error.
+      this._dismissTransactionError();
+      
+      const tx = await this._token.retrieveDog(id);
+      this.setState({ dogId: tx.id });
+      this.setState({ name: tx.name });
+      this.setState({ breed: tx.breed });
+      this.setState({ sex: tx.sex });
+      this.setState({ age: tx.age });
+      this.setState({ mother: tx.mother });
+      this.setState({ father: tx.father });
+      this.setState({ owner: tx.owner });
+      this.setState({ txBeingSent: tx.hash });
+
+      // We use .wait() to wait for the transaction to be mined. This method
+      // returns the transaction's receipt.
+      const receipt = await tx.wait();
+
+      // The receipt, contains a status flag, which is 0 to indicate an error.
+      if (receipt.status === 0) {
+        // We can't know the exact error that made the transaction fail when it
+        // was mined, so we throw this generic one.
+        throw new Error("Transaction failed");
+      }
+
+      // If we got here, the transaction was successful.
+
+    } catch (error) {
+      // We check the error code to see if this error was produced because the
+      // user rejected a tx. If that's the case, we do nothing.
+      if (error.code === ERROR_CODE_TX_REJECTED_BY_USER) {
+        return;
+      }
+
+      // Other errors are logged and stored in the Dapp's state. This is used to
+      // show them to the user, and for debugging.
+      console.error(error);
+      this.setState({ transactionError: error });
+    } finally {
+      // If we leave the try/catch, we aren't sending a tx anymore, so we clear
+      // this part of the state.
+      this.setState({ txBeingSent: undefined });
     }
   }
 
