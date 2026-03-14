@@ -1,16 +1,9 @@
-import React, { useState } from "react";
-
-// We'll use ethers to interact with the Ethereum network and our contract
+import React, { useReducer, useRef } from "react";
 import { ethers } from "ethers";
 
-// We import the contract's artifacts and address here, as we are going to be
-// using them with ethers
 import TokenArtifact from "../contracts/PedigreePal.json";
 import contractAddress from "../contracts/contract-address.json";
 
-// All the logic of this dapp is contained in the Dapp component.
-// These other components are just presentational ones: they don't have any
-// logic. They just render HTML.
 import { NoWalletDetected } from "./NoWalletDetected";
 import { ConnectWallet } from "./ConnectWallet";
 import { Loading } from "./Loading";
@@ -19,192 +12,44 @@ import { CheckDog } from "./CheckDog";
 import { TransactionErrorMessage } from "./TransactionErrorMessage";
 import { WaitingForTransactionMessage } from "./WaitingForTransactionMessage";
 import { NoTokensMessage } from "./NoTokensMessage";
+import { Navbar } from "./Navbar";
+import { DogCertificateCard } from "./DogCertificateCard";
+import { Footer } from "./Footer";
+import { SuccessToast } from "./SuccessToast";
 
-// This is the default id used by the Hardhat Network
-const HARDHAT_NETWORK_ID = '31337';
+const HARDHAT_NETWORK_ID = "31337";
+const ERROR_CODE_TX_REJECTED_BY_USER = "ACTION_REJECTED";
 
-// This is an error code that indicates that the user canceled a transaction
-const ERROR_CODE_TX_REJECTED_BY_USER = 'ACTION_REJECTED';
+const initialState = {
+  selectedAddress: undefined,
+  transactionError: undefined,
+  networkError: undefined,
+  txBeingSent: undefined,
+  register: null,
+  seePedigree: null,
+  contractReady: false,
+  dogId: undefined,
+  name: undefined,
+  breed: undefined,
+  age: undefined,
+  sex: undefined,
+  mother: undefined,
+  father: undefined,
+  owner: undefined,
+  lastRegistered: null,
+};
 
-// This component is in charge of doing these things:
-//   1. It connects to the user's wallet
-//   2. Initializes ethers and the Token contract
-//   3. Shows options to Register a dog or Check a dog's pedigree
-//   4. Renders the whole application
-export class Dapp extends React.Component {
-  constructor(props) {
-    super(props);
+function reducer(state, patch) {
+  return { ...state, ...patch };
+}
 
-    // We store multiple things in Dapp's state.
-    // You don't need to follow this pattern, but it's an useful example.
-    this.initialState = {
-      // The user's address
-      selectedAddress: undefined,
-      transactionError: undefined,
-      networkError: undefined,
-      txBeingSent: undefined,
+export function Dapp() {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const providerRef = useRef(null);
+  const contractRef = useRef(null);
 
-      register: null,
-      seePedigree: null,
-      contractReady: false,
-
-      // The Dog's details
-      dogId: undefined,
-      name: undefined,
-      breed: undefined,
-      age: undefined,
-      sex: undefined,
-      mother: undefined,
-      father: undefined,
-      owner: undefined,
-    };
-
-    this.state = this.initialState;
-  }
-
-  render() {
-    // Ethereum wallets inject the window.ethereum object. If it hasn't been
-    // injected, we instruct the user to install a wallet.
-    if (window.ethereum === undefined) {
-      return <NoWalletDetected />;
-    }
-
-    // The next thing we need to do, is to ask the user to connect their wallet.
-    // When the wallet gets connected, we are going to save the users's address
-    // in the component's state. So, if it hasn't been saved yet, we have
-    // to show the ConnectWallet component.
-    //
-    // Note that we pass it a callback that is going to be called when the user
-    // clicks a button. This callback just calls the _connectWallet method.
-    if (!this.state.selectedAddress) {
-      return (
-        <ConnectWallet 
-          connectWallet={() => this._connectWallet()} 
-          networkError={this.state.networkError}
-          dismiss={() => this._dismissNetworkError()}
-        />
-      );
-    }
-    
-    // If the contract hasn't initialized yet, we show a loading component.
-    if (!this.state.contractReady) {
-      return <Loading />;
-    }
-
-    // If everything is loaded, we render the application with two buttons,
-    // one for registering a dog and one for seeing a dog's details. On clicking
-    // these buttons, we load the corresponding components.
-    return (
-      <div className="container-fluid mt-5 text-center">
-        <div className="row">
-          <div className="col">
-            <button
-              className="btn btn-primary"
-              onClick={() => this._registerDogClicked()}
-            >
-              Register Dog
-            </button>
-          </div>
-          <div className="col">
-            <button
-              className="btn btn-primary"
-              onClick={() => this._checkDogClicked()}
-            >
-              Check Dog
-            </button>
-          </div>
-        </div>
-
-        <hr />
-
-        <div className="row">
-          <div className="col-12">
-            {/* 
-              Sending a transaction isn't an immediate action. You have to wait
-              for it to be mined.
-              If we are waiting for one, we show a message here.
-            */}
-            {this.state.txBeingSent && (
-              <WaitingForTransactionMessage txHash={this.state.txBeingSent} />
-            )}
-
-            {/* 
-              Sending a transaction can fail in multiple ways. 
-              If that happened, we show a message here.
-            */}
-            {this.state.transactionError && (
-              <TransactionErrorMessage
-                message={this._getRpcErrorMessage(this.state.transactionError)}
-                dismiss={() => this._dismissTransactionError()}
-              />
-            )}
-          </div>
-        </div>
-        <div className="row mt-5">
-          <div className="col">
-            {this._renderMain()}
-            {this.state.seePedigree && this.state.dogId !== undefined && (
-              <div className="card mt-3 text-start mx-auto" style={{ maxWidth: "400px" }}>
-                <div className="card-body">
-                  <h5 className="card-title">Dog #{this.state.dogId}</h5>
-                  <p><strong>Name:</strong> {this.state.name}</p>
-                  <p><strong>Breed:</strong> {this.state.breed}</p>
-                  <p><strong>Sex:</strong> {this.state.sex}</p>
-                  <p><strong>Age:</strong> {this.state.age}</p>
-                  <p><strong>Mother ID:</strong> {this.state.mother}</p>
-                  <p><strong>Father ID:</strong> {this.state.father}</p>
-                  <p><strong>Owner:</strong> {this.state.owner}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-      );
-    }
-
-  _renderMain() {
-    // This method renders the main content of the application, depending on its
-    // state. If no button has been clicked yet, it asks the user to register
-    // or check a dog. If the user has clicked one of the buttons, it loads
-    // the corresponding component.
-    if (this.state.register) {
-      return (
-        <RegisterDog
-          registerDog={(
-            name,
-            breed,
-            sex,
-            age,
-            mother,
-            father,
-            ) => this._registerDog(
-              name,
-              breed,
-              sex,
-              age,
-              mother,
-              father,
-          )}
-          onCancel={() => this._cancelClicked()}
-        />
-      );
-    }
-
-    // If the user has clicked the "Check Dog" button, we load the CheckDog
-    // component into the page.
-    if (this.state.seePedigree) {
-      return (
-        <CheckDog
-          retrieveDog={(dogId) => this._checkDog(dogId)}
-          onCancel={() => this._cancelClicked()}
-        />
-      );
-    }
-  }
-  
-  _cancelClicked() {
-    this.setState({
+  function _cancelClicked() {
+    dispatch({
       register: null,
       seePedigree: null,
       dogId: undefined,
@@ -218,73 +63,40 @@ export class Dapp extends React.Component {
     });
   }
 
-  async _registerDogClicked() {
-    // This method is called when the user clicks the "Register Dog" button.
-    // We load the RegisterDog component into the page.
-    this.setState({ register: true, seePedigree: false });
+  function _registerDogClicked() {
+    dispatch({ register: true, seePedigree: false });
   }
 
-  async _checkDogClicked() {
-    // This method is called when the user clicks the "Check Dog" button.
-    // We load the CheckDog component into the page.
-    this.setState({ register: false, seePedigree: true });
+  function _checkDogClicked() {
+    dispatch({ register: false, seePedigree: true });
   }
 
-  async _registerDog(name, breed, sex, age, mother, father) { 
-    // This method is called when the user clicks the "Register Dog" button.
-    // Send a transaction to the contract to register a dog.
-
+  async function _registerDog(name, breed, sex, age, mother, father) {
     try {
-      // If a transaction fails, we save that error in the component's state.
-      // We only save one such error, so before sending a second transaction, we
-      // clear it.
-      this._dismissTransactionError();
-
-      // We send the transaction, and save its hash in the Dapp's state. This
-      // way we can indicate that we are waiting for it to be mined.
-      const tx = await this._token.registerDog(name, breed, sex, age, mother, father);
-      this.setState({ txBeingSent: tx.hash });
-
-      // We use .wait() to wait for the transaction to be mined. This method
-      // returns the transaction's receipt.
+      _dismissTransactionError();
+      const tx = await contractRef.current.registerDog(name, breed, sex, age, mother, father);
+      dispatch({ txBeingSent: tx.hash });
       const receipt = await tx.wait();
-
-      // The receipt, contains a status flag, which is 0 to indicate an error.
       if (receipt.status === 0) {
-        // We can't know the exact error that made the transaction fail when it
-        // was mined, so we throw this generic one.
         throw new Error("Transaction failed");
       }
-
-      // If we got here, the transaction was successful.
-
+      dispatch({ lastRegistered: { name } });
     } catch (error) {
-      // We check the error code to see if this error was produced because the
-      // user rejected a tx. If that's the case, we do nothing.
       if (error.code === ERROR_CODE_TX_REJECTED_BY_USER) {
         return;
       }
-
-      // Other errors are logged and stored in the Dapp's state. This is used to
-      // show them to the user, and for debugging.
       console.error(error);
-      this.setState({ transactionError: error });
+      dispatch({ transactionError: error });
     } finally {
-      // If we leave the try/catch, we aren't sending a tx anymore, so we clear
-      // this part of the state.
-      this.setState({ txBeingSent: undefined });
+      dispatch({ txBeingSent: undefined });
     }
   }
 
-  async _checkDog(id) {
-    // This method is called when the user clicks the "Check Dog" button.
-    // Send a transaction to the contract to check a dog's details by its ID.
-
+  async function _checkDog(id) {
     try {
-      this._dismissTransactionError();
-
-      const dog = await this._token.retrieveDog(id);
-      this.setState({
+      _dismissTransactionError();
+      const dog = await contractRef.current.retrieveDog(id);
+      dispatch({
         dogId: dog.id.toString(),
         name: dog.name,
         breed: dog.breed,
@@ -295,108 +107,181 @@ export class Dapp extends React.Component {
         owner: dog.owner,
       });
     } catch (error) {
-      // We check the error code to see if this error was produced because the
-      // user rejected a tx. If that's the case, we do nothing.
       if (error.code === ERROR_CODE_TX_REJECTED_BY_USER) {
         return;
       }
-
-      // Other errors are logged and stored in the Dapp's state. This is used to
-      // show them to the user, and for debugging.
       console.error(error);
-      this.setState({ transactionError: error });
+      dispatch({ transactionError: error });
     }
   }
 
-  async _connectWallet() {
-    // This method is run when the user clicks the Connect. It connects the
-    // dapp to the user's wallet, and initializes it.
-
-    // To connect to the user's wallet, we have to run this method.
-    // It returns a promise that will resolve to the user's address.
-    const [selectedAddress] = await window.ethereum.request({ method: 'eth_requestAccounts' });
-
-    // Once we have the address, we can initialize the application.
-
-    // First we check the network
-    this._checkNetwork();
-
-    this._initialize(selectedAddress);
-
-    // We reinitialize it whenever the user changes their account.
+  async function _connectWallet() {
+    const [selectedAddress] = await window.ethereum.request({ method: "eth_requestAccounts" });
+    _checkNetwork();
+    _initialize(selectedAddress);
     window.ethereum.on("accountsChanged", ([newAddress]) => {
-      // `accountsChanged` event can be triggered with an undefined newAddress.
-      // This happens when the user removes the Dapp from the "Connected
-      // list of sites allowed access to your addresses" (Metamask > Settings > Connections)
-      // To avoid errors, we reset the dapp state 
       if (newAddress === undefined) {
-        return this._resetState();
+        return _resetState();
       }
-      
-      this._initialize(newAddress);
+      _initialize(newAddress);
     });
   }
 
-  _initialize(userAddress) {
-    // This method initializes the dapp
-
-    // We first store the user's address in the component's state
-    this.setState({
-      selectedAddress: userAddress,
-    });
-
-    this._initializeEthers();
+  function _initialize(userAddress) {
+    dispatch({ selectedAddress: userAddress });
+    _initializeEthers();
   }
 
-  async _initializeEthers() {
-    this._provider = new ethers.BrowserProvider(window.ethereum);
-    const signer = await this._provider.getSigner();
-    this._token = new ethers.Contract(
+  async function _initializeEthers() {
+    providerRef.current = new ethers.BrowserProvider(window.ethereum);
+    const signer = await providerRef.current.getSigner();
+    contractRef.current = new ethers.Contract(
       contractAddress.Token,
       TokenArtifact.abi,
       signer
     );
-    this.setState({ contractReady: true });
+    dispatch({ contractReady: true });
   }
 
-  // This method just clears part of the state.
-  _dismissTransactionError() {
-    this.setState({ transactionError: undefined });
+  function _dismissTransactionError() {
+    dispatch({ transactionError: undefined });
   }
 
-  // This method just clears part of the state.
-  _dismissNetworkError() {
-    this.setState({ networkError: undefined });
+  function _dismissNetworkError() {
+    dispatch({ networkError: undefined });
   }
 
-  // This is an utility method that turns an RPC error into a human readable
-  // message.
-  _getRpcErrorMessage(error) {
+  function _getRpcErrorMessage(error) {
     if (error.data) {
       return error.data.message;
     }
-
     return error.message;
   }
 
-  // This method resets the state
-  _resetState() {
-    this.setState(this.initialState);
+  function _resetState() {
+    dispatch(initialState);
   }
 
-  async _switchChain() {
-    const chainIdHex = `0x${HARDHAT_NETWORK_ID.toString(16)}`
+  async function _switchChain() {
+    const chainIdHex = `0x${parseInt(HARDHAT_NETWORK_ID).toString(16)}`;
     await window.ethereum.request({
       method: "wallet_switchEthereumChain",
       params: [{ chainId: chainIdHex }],
     });
-    await this._initialize(this.state.selectedAddress);
+    await _initialize(state.selectedAddress);
   }
 
-  // This method checks if the selected network is Localhost:8545
-  _checkNetwork() {
+  function _checkNetwork() {
     if (window.ethereum.networkVersion !== HARDHAT_NETWORK_ID) {
-      this._switchChain();
+      _switchChain();
     }
   }
+
+  if (window.ethereum === undefined) {
+    return <NoWalletDetected />;
+  }
+
+  if (!state.selectedAddress) {
+    return (
+      <ConnectWallet
+        connectWallet={_connectWallet}
+        networkError={state.networkError}
+        dismiss={_dismissNetworkError}
+      />
+    );
+  }
+
+  if (!state.contractReady) {
+    return <Loading />;
+  }
+
+  return (
+    <div className="min-h-screen bg-base-200 flex flex-col">
+      <Navbar selectedAddress={state.selectedAddress} onDisconnect={_resetState} />
+
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-3xl">
+        {state.txBeingSent && (
+          <WaitingForTransactionMessage txHash={state.txBeingSent} />
+        )}
+        {state.transactionError && (
+          <TransactionErrorMessage
+            message={_getRpcErrorMessage(state.transactionError)}
+            dismiss={_dismissTransactionError}
+          />
+        )}
+
+        {!state.register && !state.seePedigree && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+              <div
+                className="card bg-base-100 shadow hover:shadow-lg cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
+                onClick={_registerDogClicked}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === "Enter" && _registerDogClicked()}
+              >
+                <div className="card-body items-center text-center py-8">
+                  <div className="text-4xl mb-2">🐕</div>
+                  <h2 className="card-title text-primary">Register Dog</h2>
+                  <p className="text-sm text-base-content/60">Add a new dog to the blockchain registry</p>
+                </div>
+              </div>
+              <div
+                className="card bg-base-100 shadow hover:shadow-lg cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
+                onClick={_checkDogClicked}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === "Enter" && _checkDogClicked()}
+              >
+                <div className="card-body items-center text-center py-8">
+                  <div className="text-4xl mb-2">🔍</div>
+                  <h2 className="card-title text-secondary">Check Pedigree</h2>
+                  <p className="text-sm text-base-content/60">Look up a dog's lineage by ID</p>
+                </div>
+              </div>
+            </div>
+            <NoTokensMessage />
+          </>
+        )}
+
+        {state.register && (
+          <RegisterDog
+            registerDog={(name, breed, sex, age, mother, father) =>
+              _registerDog(name, breed, sex, age, mother, father)
+            }
+            onCancel={_cancelClicked}
+          />
+        )}
+
+        {state.seePedigree && (
+          <CheckDog
+            retrieveDog={(dogId) => _checkDog(dogId)}
+            onCancel={_cancelClicked}
+          />
+        )}
+
+        {state.seePedigree && state.dogId !== undefined && (
+          <DogCertificateCard
+            dogId={state.dogId}
+            name={state.name}
+            breed={state.breed}
+            sex={state.sex}
+            age={state.age}
+            mother={state.mother}
+            father={state.father}
+            owner={state.owner}
+          />
+        )}
+      </main>
+
+      <Footer contractAddr={contractAddress.Token} />
+
+      {state.lastRegistered && (
+        <SuccessToast
+          dog={state.lastRegistered}
+          onDone={() => dispatch({ lastRegistered: null })}
+        />
+      )}
+    </div>
+  );
 }
