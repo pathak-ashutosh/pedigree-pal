@@ -24,7 +24,7 @@ import { NoTokensMessage } from "./NoTokensMessage";
 const HARDHAT_NETWORK_ID = '31337';
 
 // This is an error code that indicates that the user canceled a transaction
-const ERROR_CODE_TX_REJECTED_BY_USER = 4001;
+const ERROR_CODE_TX_REJECTED_BY_USER = 'ACTION_REJECTED';
 
 // This component is in charge of doing these things:
 //   1. It connects to the user's wallet
@@ -46,6 +46,7 @@ export class Dapp extends React.Component {
 
       register: null,
       seePedigree: null,
+      contractReady: false,
 
       // The Dog's details
       dogId: undefined,
@@ -85,8 +86,8 @@ export class Dapp extends React.Component {
       );
     }
     
-    // If the token address hasn't loaded yet, we show a loading component.
-    if (!this.state.selectedAddress) {
+    // If the contract hasn't initialized yet, we show a loading component.
+    if (!this.state.contractReady) {
       return <Loading />;
     }
 
@@ -142,15 +143,20 @@ export class Dapp extends React.Component {
         <div className="row mt-5">
           <div className="col">
             {this._renderMain()}
-            <b>
-                {this.state.dogId}
-                {this.state.name}
-                {this.state.breed}
-                {this.state.sex}
-                {this.state.age}
-                {this.state.mother}
-                {this.state.father}
-            </b>
+            {this.state.seePedigree && this.state.dogId !== undefined && (
+              <div className="card mt-3 text-start mx-auto" style={{ maxWidth: "400px" }}>
+                <div className="card-body">
+                  <h5 className="card-title">Dog #{this.state.dogId}</h5>
+                  <p><strong>Name:</strong> {this.state.name}</p>
+                  <p><strong>Breed:</strong> {this.state.breed}</p>
+                  <p><strong>Sex:</strong> {this.state.sex}</p>
+                  <p><strong>Age:</strong> {this.state.age}</p>
+                  <p><strong>Mother ID:</strong> {this.state.mother}</p>
+                  <p><strong>Father ID:</strong> {this.state.father}</p>
+                  <p><strong>Owner:</strong> {this.state.owner}</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -180,6 +186,7 @@ export class Dapp extends React.Component {
               mother,
               father,
           )}
+          onCancel={() => this._cancelClicked()}
         />
       );
     }
@@ -190,11 +197,27 @@ export class Dapp extends React.Component {
       return (
         <CheckDog
           retrieveDog={(dogId) => this._checkDog(dogId)}
+          onCancel={() => this._cancelClicked()}
         />
       );
     }
   }
   
+  _cancelClicked() {
+    this.setState({
+      register: null,
+      seePedigree: null,
+      dogId: undefined,
+      name: undefined,
+      breed: undefined,
+      age: undefined,
+      sex: undefined,
+      mother: undefined,
+      father: undefined,
+      owner: undefined,
+    });
+  }
+
   async _registerDogClicked() {
     // This method is called when the user clicks the "Register Dog" button.
     // We load the RegisterDog component into the page.
@@ -258,33 +281,19 @@ export class Dapp extends React.Component {
     // Send a transaction to the contract to check a dog's details by its ID.
 
     try {
-      // We clear any transaction error.
       this._dismissTransactionError();
-      
-      const tx = await this._token.retrieveDog(id);
-      this.setState({ dogId: tx.id });
-      this.setState({ name: tx.name });
-      this.setState({ breed: tx.breed });
-      this.setState({ sex: tx.sex });
-      this.setState({ age: tx.age });
-      this.setState({ mother: tx.mother });
-      this.setState({ father: tx.father });
-      this.setState({ owner: tx.owner });
-      this.setState({ txBeingSent: tx.hash });
 
-      // We use .wait() to wait for the transaction to be mined. This method
-      // returns the transaction's receipt.
-      const receipt = await tx.wait();
-
-      // The receipt, contains a status flag, which is 0 to indicate an error.
-      if (receipt.status === 0) {
-        // We can't know the exact error that made the transaction fail when it
-        // was mined, so we throw this generic one.
-        throw new Error("Transaction failed");
-      }
-
-      // If we got here, the transaction was successful.
-
+      const dog = await this._token.retrieveDog(id);
+      this.setState({
+        dogId: dog.id.toString(),
+        name: dog.name,
+        breed: dog.breed,
+        sex: dog.sex,
+        age: dog.age.toString(),
+        mother: dog.mother.toString(),
+        father: dog.father.toString(),
+        owner: dog.owner,
+      });
     } catch (error) {
       // We check the error code to see if this error was produced because the
       // user rejected a tx. If that's the case, we do nothing.
@@ -296,10 +305,6 @@ export class Dapp extends React.Component {
       // show them to the user, and for debugging.
       console.error(error);
       this.setState({ transactionError: error });
-    } finally {
-      // If we leave the try/catch, we aren't sending a tx anymore, so we clear
-      // this part of the state.
-      this.setState({ txBeingSent: undefined });
     }
   }
 
@@ -344,16 +349,14 @@ export class Dapp extends React.Component {
   }
 
   async _initializeEthers() {
-    // We first initialize ethers by creating a provider using window.ethereum
-    this._provider = new ethers.providers.Web3Provider(window.ethereum);
-
-    // Then, we initialize the contract using that provider and the token's
-    // artifact. You can do this same thing with your contracts.
+    this._provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await this._provider.getSigner();
     this._token = new ethers.Contract(
       contractAddress.Token,
       TokenArtifact.abi,
-      this._provider.getSigner(0)
+      signer
     );
+    this.setState({ contractReady: true });
   }
 
   // This method just clears part of the state.

@@ -1,0 +1,29 @@
+# Dependencies
+node_modules
+frontend/node_modules
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Hardhat
+artifacts
+cache
+typechain-types
+
+# Vite / frontend build
+frontend/dist
+frontend/.vite
+
+# Generated contract artifacts (produced by deploy script)
+frontend/src/contracts/contract-address.json
+frontend/src/contracts/PedigreePal.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
