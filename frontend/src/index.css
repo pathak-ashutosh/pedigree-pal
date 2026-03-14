@@ -1,0 +1,47 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+[data-theme="pedigree"] {
+  color-scheme: light;
+  --color-base-100: #fdf8f3;
+  --color-base-200: #f0e6d3;
+  --color-base-300: #deccb3;
+  --color-base-content: #3d2b0e;
+  --color-primary: #8b5e3c;
+  --color-primary-content: #ffffff;
+  --color-secondary: #4d8a4d;
+  --color-secondary-content: #ffffff;
+  --color-accent: #c4832a;
+  --color-accent-content: #fff8ec;
+  --color-neutral: #4a3728;
+  --color-neutral-content: #f5f0ea;
+  --color-info: #3b82f6;
+  --color-info-content: #ffffff;
+  --color-success: #22c55e;
+  --color-success-content: #ffffff;
+  --color-warning: #f59e0b;
+  --color-warning-content: #1a1100;
+  --color-error: #ef4444;
+  --color-error-content: #ffffff;
+  --rounded-box: 0.75rem;
+  --rounded-btn: 0.5rem;
+  --rounded-badge: 1.9rem;
+  --animation-btn: 0.1s;
+  --animation-input: 0.2s;
+  --btn-focus-scale: 0.97;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
