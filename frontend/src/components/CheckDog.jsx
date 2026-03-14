@@ -1,43 +1,53 @@
 import React from "react";
-
-// Shows an input field where the user enters a dog id, and a button that
-// triggers the checkDog callback. The checkDog callback is passed in as a
-// prop. It is going to be called when the user clicks the button. The
-// checkDog callback is going to call the _checkDog method in the Dapp
-// component. The _checkDog method is going to send a transaction to the
-// contract to check a dog's pedigree. The transaction is going to be
-// processed by the contract, and the contract is going to emit an event
-// with the dog's details. The Dapp component is going to listen for this
-// event, and when it receives it, it is going to update the state with the
-// dog's details.
+import { Search } from "lucide-react";
 
 export function CheckDog({ retrieveDog, onCancel }) {
-    return (
-        <div className="container">
-            <div className="row justify-content-md-center">
-                <div className="col-12 text-center">
-                    <h1>Check Dog Pedigree</h1>
-                    <form
-                        onSubmit={(event) => {
-                            // This function just calls the registerDog callback with the form's data.
-                            event.preventDefault();
-
-                            const formData = new FormData(event.target);
-                            const dogId = formData.get("dogId");
-
-                            if (dogId) {
-                                retrieveDog(dogId);
-                            }
-                        }}>
-                        <p>Enter DogID </p>
-                        <input type="number" id="dogId" name="dogId" /><br/><br/>
-                        <div className="mb-3">
-                            <input className="btn btn-primary me-2" type="submit" value="Show Pedigree" />
-                            <button className="btn btn-warning" type="button" onClick={onCancel}>Cancel</button>
-                        </div>
-                    </form>
-                </div>
+  return (
+    <div className="flex justify-center p-2">
+      <div className="card bg-base-100 shadow-xl w-full max-w-md animate-fade-in">
+        <div className="card-body gap-4">
+          <div className="flex items-center gap-2">
+            <Search className="h-6 w-6 text-secondary" />
+            <h2 className="card-title text-xl">Check Pedigree</h2>
+          </div>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              const formData = new FormData(event.target);
+              const dogId = formData.get("dogId");
+              if (dogId) {
+                retrieveDog(dogId);
+              }
+            }}
+          >
+            <div className="form-control mb-4">
+              <label className="label" htmlFor="dogId">
+                <span className="label-text font-medium">Dog ID</span>
+              </label>
+              <div className="join w-full">
+                <input
+                  className="input input-bordered join-item flex-1"
+                  type="number"
+                  id="dogId"
+                  name="dogId"
+                  placeholder="Enter dog ID"
+                  min="0"
+                  required
+                />
+                <button className="btn btn-secondary join-item gap-1" type="submit">
+                  <Search className="h-4 w-4" />
+                  Look up
+                </button>
+              </div>
             </div>
+            <div className="card-actions justify-end">
+              <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>
+                Cancel
+              </button>
+            </div>
+          </form>
         </div>
-    );
+      </div>
+    </div>
+  );
 }
