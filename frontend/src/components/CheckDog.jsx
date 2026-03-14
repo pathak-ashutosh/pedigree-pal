@@ -1,4 +1,4 @@
-import { React } from "react";
+import React from "react";
 
 // Shows an input field where the user enters a dog id, and a button that
 // triggers the checkDog callback. The checkDog callback is passed in as a
@@ -11,7 +11,7 @@ import { React } from "react";
 // event, and when it receives it, it is going to update the state with the
 // dog's details.
 
-export function CheckDog({ retrieveDog }) {
+export function CheckDog({ retrieveDog, onCancel }) {
     return (
         <div className="container">
             <div className="row justify-content-md-center">
@@ -30,9 +30,10 @@ export function CheckDog({ retrieveDog }) {
                             }
                         }}>
                         <p>Enter DogID </p>
-                        <input type="number" id="dogId" /><br/><br/>
-                        <div className="form-group">
-                            <input className="btn btn-primary" type="submit" value="Show Pedigree" />
+                        <input type="number" id="dogId" name="dogId" /><br/><br/>
+                        <div className="mb-3">
+                            <input className="btn btn-primary me-2" type="submit" value="Show Pedigree" />
+                            <button className="btn btn-warning" type="button" onClick={onCancel}>Cancel</button>
                         </div>
                     </form>
                 </div>
