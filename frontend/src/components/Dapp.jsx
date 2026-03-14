@@ -111,6 +111,10 @@ export function Dapp() {
         return;
       }
       console.error(error);
+      if (error.code === "BAD_DATA" && error.value === "0x") {
+        dispatch({ transactionError: { message: `No dog found with ID ${id}` } });
+        return;
+      }
       dispatch({ transactionError: error });
     }
   }
@@ -152,10 +156,19 @@ export function Dapp() {
   }
 
   function _getRpcErrorMessage(error) {
-    if (error.data) {
-      return error.data.message;
-    }
-    return error.message;
+    if (error.data?.message) return error.data.message;
+    const msg = error.message ?? "";
+    if (error.code === "INSUFFICIENT_FUNDS" || msg.includes("insufficient funds"))
+      return "Insufficient funds to complete this transaction.";
+    if (error.code === "CALL_EXCEPTION" || msg.includes("execution reverted"))
+      return "Transaction was rejected by the contract.";
+    if (error.code === "NETWORK_ERROR" || msg.includes("network"))
+      return "Network error. Check your connection and try again.";
+    if (error.code === "UNPREDICTABLE_GAS_LIMIT")
+      return "Could not estimate gas. The transaction may fail.";
+    // Hide raw ethers internals for any remaining technical errors
+    if (error.code && !msg) return "An unexpected error occurred.";
+    return msg || "An unexpected error occurred.";
   }
 
   function _resetState() {
