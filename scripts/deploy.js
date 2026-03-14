@@ -1,10 +1,6 @@
-// This is a script for deploying your contracts. You can adapt it to deploy
-// yours, or create new ones.
-
 const path = require("path");
 
 async function main() {
-  // This is just a convenience check
   if (network.name === "hardhat") {
     console.warn(
       "You are trying to deploy a contract to the Hardhat Network, which" +
@@ -13,26 +9,25 @@ async function main() {
     );
   }
 
-  // ethers is available in the global scope
   const [deployer] = await ethers.getSigners();
   console.log(
     "Deploying the contracts with the account:",
     await deployer.getAddress()
   );
 
-  console.log("Account balance:", (await deployer.getBalance()).toString());
+  console.log("Account balance:", (await ethers.provider.getBalance(deployer.address)).toString());
 
   const Token = await ethers.getContractFactory("PedigreePal");
   const token = await Token.deploy();
-  await token.deployed();
+  await token.waitForDeployment();
 
-  console.log("Token address:", token.address);
+  const tokenAddress = await token.getAddress();
+  console.log("Token address:", tokenAddress);
 
-  // We also save the contract's artifacts and address in the frontend directory
-  saveFrontendFiles(token);
+  saveFrontendFiles(token, tokenAddress);
 }
 
-function saveFrontendFiles(token) {
+function saveFrontendFiles(token, tokenAddress) {
   const fs = require("fs");
   const contractsDir = path.join(__dirname, "..", "frontend", "src", "contracts");
 
@@ -42,7 +37,7 @@ function saveFrontendFiles(token) {
 
   fs.writeFileSync(
     path.join(contractsDir, "contract-address.json"),
-    JSON.stringify({ Token: token.address }, undefined, 2)
+    JSON.stringify({ Token: tokenAddress }, undefined, 2)
   );
 
   const TokenArtifact = artifacts.readArtifactSync("PedigreePal");

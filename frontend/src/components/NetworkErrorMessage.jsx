@@ -6,13 +6,11 @@ export function NetworkErrorMessage({ message, dismiss }) {
       {message}
       <button
         type="button"
-        className="close"
-        data-dismiss="alert"
+        className="btn-close"
+        data-bs-dismiss="alert"
         aria-label="Close"
         onClick={dismiss}
-      >
-        <span aria-hidden="true">&times;</span>
-      </button>
+      />
     </div>
   );
 }

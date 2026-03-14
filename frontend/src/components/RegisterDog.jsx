@@ -1,6 +1,6 @@
 import React from "react";
 
-export function RegisterDog({ registerDog }) {
+export function RegisterDog({ registerDog, onCancel }) {
   return (
     <div className="container">
       <div className="row justify-content-md-center">
@@ -25,7 +25,7 @@ export function RegisterDog({ registerDog }) {
             }
           }}
         >
-        <div className="form-group">
+        <div className="mb-3">
           <label htmlFor="name">Name</label>
           <input
             className="form-control"
@@ -36,7 +36,7 @@ export function RegisterDog({ registerDog }) {
             required
           />
         </div>
-        <div className="form-group">
+        <div className="mb-3">
           <label htmlFor="breed">Breed</label>
           <input
             className="form-control"
@@ -47,7 +47,7 @@ export function RegisterDog({ registerDog }) {
             required
           />
         </div>
-        <div className="form-group">
+        <div className="mb-3">
           <label htmlFor="age">Age</label>
           <input
             className="form-control"
@@ -58,18 +58,15 @@ export function RegisterDog({ registerDog }) {
             required
           />
         </div>
-        <div className="form-group">
+        <div className="mb-3">
           <label htmlFor="sex">Sex</label>
-            <input
-              className="form-control"
-              id="sex"
-              type="dropdown"
-              name="sex"
-              placeholder="M or F"
-              required
-            />
+          <select className="form-control" id="sex" name="sex" required>
+            <option value="">Select sex</option>
+            <option value="M">M</option>
+            <option value="F">F</option>
+          </select>
         </div>
-        <div className="form-group">
+        <div className="mb-3">
           <label htmlFor="mother">Mother</label>
           <input
             className="form-control"
@@ -80,7 +77,7 @@ export function RegisterDog({ registerDog }) {
             required
           />
         </div>
-        <div className="form-group">
+        <div className="mb-3">
           <label htmlFor="father">Father</label>
           <input
             className="form-control"
@@ -91,13 +88,13 @@ export function RegisterDog({ registerDog }) {
             required
           />
         </div>
-        <div className="form-group">
+        <div className="mb-3">
           <input className="btn btn-primary" type="submit" value="Register" />
         </div>
-        <button className="btn btn-secondary btn-danger mr-2" type="reset">
+        <button className="btn btn-danger me-2" type="reset">
           Clear Form
         </button>
-        <button className="btn btn-secondary btn-warning mr-2" type="cancel">
+        <button className="btn btn-warning me-2" type="button" onClick={onCancel}>
           Cancel
         </button>
       </form>
