@@ -1,16 +1,17 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
-require("./tasks/faucet");
 
 const { API_URL, METAMASK_PRIVATE_KEY } = process.env;
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.18",
+  solidity: "0.8.28",
   networks: {
-    mumbai: {
-      url: API_URL,
-      accounts: [`0x${METAMASK_PRIVATE_KEY}`]
-    }
+    ...(API_URL && METAMASK_PRIVATE_KEY ? {
+      amoy: {
+        url: API_URL,
+        accounts: [`0x${METAMASK_PRIVATE_KEY}`]
+      }
+    } : {})
   }
 };
