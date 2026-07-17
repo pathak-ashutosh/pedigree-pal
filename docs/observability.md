@@ -8,7 +8,7 @@ Browser and server emit one-line JSON with stable fields:
 - `requestId`, route/method/status/duration where applicable
 - error category/code, never raw provider or customer payloads
 
-Server logs use Pino. Browser logs use `frontend/src/lib/logger.js`. Event names are domain-first (`auth.magic_link.sent`, `health.checked`, `dog.registration_failed`).
+Server logs use Pino. Event names are domain-first (`auth.magic_link.sent`, `health.checked`, `dog.registration_failed`).
 
 ## Privacy
 

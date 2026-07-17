@@ -25,8 +25,8 @@ Follow the [Getting Started](README.md#getting-started) section in the README to
 |---|---|---|
 | Feature | `feat/` | `feat/microchip-integration` |
 | Bug fix | `fix/` | `fix/register-dog-overflow` |
-| Docs | `docs/` | `docs/contract-api` |
-| Refactor | `refactor/` | `refactor/dapp-state` |
+| Docs | `docs/` | `docs/api-reference` |
+| Refactor | `refactor/` | `refactor/billing-webhooks` |
 
 ## Commit Messages
 
@@ -34,23 +34,8 @@ Use short, imperative messages:
 ```
 feat: add role-based access for vets
 fix: prevent duplicate dog IDs
-docs: update contract ABI reference
+docs: update API reference
 ```
-
-## Smart Contract Changes
-
-- Write or update tests in `test/PedigreePal.js` for any contract change
-- Run `npx hardhat compile` to regenerate artifacts before testing
-- Document new functions in [docs/smart-contract.md](docs/smart-contract.md)
-
-## Frontend Changes
-
-- Keep components small and focused
-- State management lives in `Dapp.jsx` via `useReducer`
-- Use DaisyUI components where possible before writing custom CSS
-- Use the structured logger; never call `console.*` directly or log customer/wallet data
-- Preserve the coverage thresholds in [docs/testing.md](docs/testing.md)
-- Run the dev server (`cd frontend && npm start`) to verify UI changes
 
 ## SaaS Changes
 
@@ -69,13 +54,11 @@ docs: update contract ABI reference
 
 ## Code Style
 
-- Solidity: follow the [Solidity Style Guide](https://docs.soliditylang.org/en/latest/style-guide.html)
-- JavaScript/JSX: follow the existing file style; automated formatting will be added during TypeScript migration
+- TypeScript/React: follow the existing file style; keep ESLint clean (`npm --prefix apps/web run lint`)
 
 ## Reporting Issues
 
 Open an issue with:
 - Steps to reproduce
 - Expected vs actual behavior
-- Browser/MetaMask version (for frontend bugs)
-- Network and transaction hash (for contract bugs)
+- Environment (browser, OS) and any relevant request IDs from the structured logs

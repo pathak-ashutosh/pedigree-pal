@@ -2,21 +2,12 @@
   "name": "pedigree-pal",
   "version": "1.1.0",
   "description": "Multi-tenant pedigree records with private evidence and optional blockchain proof.",
-  "main": "index.js",
   "scripts": {
-    "build": "npm --prefix frontend run build",
-    "build:saas": "npm --prefix apps/web run build",
-    "check": "npm run test:coverage && npm run build && npm --prefix apps/web run check",
-    "test": "npm run test:contracts",
-    "test:contracts": "hardhat test",
-    "test:coverage": "npm run test:coverage:contracts && npm run test:coverage:frontend",
-    "test:coverage:contracts": "hardhat coverage && node scripts/check-contract-coverage.js",
-    "test:coverage:frontend": "npm --prefix frontend run test:coverage",
-    "test:frontend": "npm --prefix frontend test",
-    "test:saas": "npm --prefix apps/web test",
-    "test:coverage:saas": "npm --prefix apps/web run test:coverage",
+    "build": "npm --prefix apps/web run build",
+    "test": "npm --prefix apps/web test",
+    "test:coverage": "npm --prefix apps/web run test:coverage",
     "test:database": "supabase test db",
-    "test:all": "npm run test:contracts && npm run test:frontend && npm run test:saas"
+    "check": "npm --prefix apps/web run check"
   },
   "engines": {
     "node": ">=20 <25",
@@ -27,26 +18,19 @@
     "url": "git+https://github.com/pathak-ashutosh/pedigree-pal.git"
   },
   "keywords": [
-    "ethereum",
-    "blockchain",
     "dog",
     "pedigree",
     "saas",
     "supabase",
     "nextjs",
-    "smart-contract",
-    "token",
-    "nft"
+    "blockchain",
+    "ethereum",
+    "smart-contract"
   ],
   "author": "",
   "license": "GPL-3.0-only",
   "bugs": {
     "url": "https://github.com/pathak-ashutosh/pedigree-pal/issues"
   },
-  "homepage": "https://github.com/pathak-ashutosh/pedigree-pal#readme",
-  "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "dotenv": "^17.4.2",
-    "hardhat": "^2.22.0"
-  }
+  "homepage": "https://github.com/pathak-ashutosh/pedigree-pal#readme"
 }

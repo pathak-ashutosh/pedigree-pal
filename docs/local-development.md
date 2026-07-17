@@ -27,17 +27,3 @@ supabase db lint --local --level warning
 ```
 
 The app runs at `http://localhost:3000`; liveness and readiness are `/api/health` and `/api/ready`.
-
-## Legacy V1
-
-The Hardhat/Vite dApp is retained for compatibility:
-
-```bash
-npm ci
-npm ci --prefix frontend
-npx hardhat node
-npx hardhat run scripts/deploy.js --network localhost
-npm --prefix frontend start
-```
-
-It runs at `http://localhost:5173` and is not the SaaS system of record.
