@@ -126,6 +126,8 @@ Exit: test-clock billing lifecycle and support workflows pass end-to-end.
 
 ### 3. Trust layer
 
+See the detailed [trust layer plan](trust-layer-plan.md).
+
 - V2 contract specification, tests, static analysis, independent audit
 - SIWE wallet linking, issuer roles, attestation/indexer/reconciliation
 - Ownership transfers, public verification pages and QR certificates
