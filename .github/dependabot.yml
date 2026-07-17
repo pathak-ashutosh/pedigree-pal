@@ -8,9 +8,13 @@ updates:
       saas-web:
         patterns: ["*"]
     ignore:
-      # ESLint 10 breaks eslint-config-next@16's bundled typescript-eslint.
-      # Hold at v9 until eslint-config-next supports ESLint 10.
+      # ESLint 10: eslint-config-next@16's bundled plugins (react, jsx-a11y,
+      # import) have no ESLint 10 release yet. Hold at v9.
       - dependency-name: eslint
+        update-types: ["version-update:semver-major"]
+      # TypeScript 7 (native compiler port) breaks typescript-eslint, which caps
+      # at <6.1.0. Hold at v5 until the lint toolchain supports it.
+      - dependency-name: typescript
         update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
