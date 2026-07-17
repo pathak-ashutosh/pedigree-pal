@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandLogo } from "@/components/brand-logo";
 import styles from "./page.module.css";
 
 const workflow = [
@@ -20,11 +21,7 @@ const workflow = [
 ];
 
 function BrandMark() {
-  return (
-    <span className={styles.brandMark} aria-hidden="true">
-      PP
-    </span>
-  );
+  return <BrandLogo className={styles.brandMark} />;
 }
 
 export default function Home() {
