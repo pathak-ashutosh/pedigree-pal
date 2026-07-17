@@ -1,0 +1,438 @@
+.registryHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+}
+
+.registryHeader > div > p,
+.detailEyebrow {
+  margin-bottom: 9px;
+  color: var(--registry-blue);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.registryHeader h1,
+.recordHeader h1 {
+  font-family: var(--font-display);
+  font-size: clamp(46px, 5vw, 68px);
+  font-weight: 620;
+  letter-spacing: -0.05em;
+  line-height: 0.98;
+}
+
+.registryHeader > a,
+.recordActions a {
+  padding: 13px 17px;
+  border: 1px solid var(--ink);
+  color: var(--white);
+  background: var(--registry-blue);
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.searchForm {
+  display: flex;
+  margin-top: 42px;
+  border: 1px solid var(--ink);
+  background: var(--white);
+}
+
+.searchForm input {
+  width: 100%;
+  min-height: 49px;
+  padding: 0 14px;
+  border: 0;
+  color: var(--ink);
+}
+
+.searchForm button {
+  min-width: 110px;
+  border: 0;
+  border-left: 1px solid var(--ink);
+  color: var(--white);
+  background: var(--ink);
+  font-weight: 700;
+}
+
+.dogTable {
+  width: 100%;
+  margin-top: 18px;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  background: var(--white);
+}
+
+.dogTable th,
+.dogTable td {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.dogTable th {
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dogTable td {
+  font-size: 12px;
+}
+
+.dogTable td:first-child a {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.dogTable td:first-child small {
+  color: var(--ink-soft);
+}
+
+.statusBadge {
+  padding: 5px 7px;
+  background: var(--powder);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+.emptyRegistry {
+  margin-top: 18px;
+  padding: 60px 36px;
+  border: 1px dashed #9db0b3;
+  text-align: center;
+}
+
+.emptyRegistry h2 {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 620;
+}
+
+.emptyRegistry p {
+  margin: 12px auto 26px;
+  color: var(--ink-soft);
+}
+
+.emptyRegistry a {
+  color: var(--registry-blue);
+  font-weight: 700;
+}
+
+.formPage {
+  width: min(880px, 100%);
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 35px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.formPage h1 {
+  font-family: var(--font-display);
+  font-size: clamp(46px, 5vw, 64px);
+  font-weight: 620;
+  letter-spacing: -0.05em;
+}
+
+.formPage > p {
+  max-width: 600px;
+  margin-top: 12px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.dogForm {
+  margin-top: 38px;
+  padding: 32px;
+  border: 1px solid var(--line);
+  background: var(--white);
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 22px;
+}
+
+.dogForm label > span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dogForm label small {
+  color: var(--ink-soft);
+  font-size: 9px;
+  font-weight: 400;
+}
+
+.dogForm input,
+.dogForm select,
+.dogForm textarea,
+.parentForm select {
+  width: 100%;
+  min-height: 49px;
+  padding: 0 12px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  color: var(--ink);
+  background: var(--paper);
+  font: inherit;
+}
+
+.dogForm textarea {
+  padding-block: 12px;
+  resize: vertical;
+}
+
+.dogForm [aria-invalid="true"] {
+  border-color: var(--kennel-red);
+}
+
+.help {
+  margin-top: 9px;
+  color: var(--ink-soft);
+  font-size: 10px;
+}
+
+.notesField {
+  display: block;
+  margin-top: 24px;
+}
+
+.formFooter {
+  display: flex;
+  min-height: 72px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+.formFooter button,
+.parentForm button {
+  display: inline-flex;
+  min-height: 47px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 35px;
+  padding: 0 16px;
+  border: 1px solid var(--ink);
+  color: var(--white);
+  background: var(--registry-blue);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.formFooter button:disabled,
+.parentForm button:disabled {
+  opacity: 0.65;
+}
+
+.status,
+.error {
+  color: #28734c;
+  font-size: 11px;
+}
+
+.error {
+  color: var(--kennel-red);
+}
+
+.recordHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.recordHeader > div > p:last-child {
+  margin-top: 8px;
+  color: var(--ink-soft);
+}
+
+.recordActions {
+  display: flex;
+  gap: 10px;
+}
+
+.recordActions a:first-child {
+  color: var(--ink);
+  background: var(--white);
+}
+
+.recordGrid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 18px;
+  margin-top: 40px;
+}
+
+.recordCard,
+.pedigreeCard,
+.archiveForm {
+  padding: 30px;
+  border: 1px solid var(--line);
+  background: var(--white);
+}
+
+.recordCard h2,
+.pedigreeCard h2 {
+  margin-bottom: 24px;
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 620;
+}
+
+.recordDetails {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.recordDetails div {
+  min-height: 86px;
+  padding: 15px 0;
+  border-top: 1px solid var(--line);
+}
+
+.recordDetails dt {
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+.recordDetails dd {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.parentForms {
+  display: grid;
+  gap: 20px;
+}
+
+.readonlyParents {
+  display: grid;
+  gap: 16px;
+}
+
+.readonlyParents div {
+  padding: 17px 0;
+  border-top: 1px solid var(--line);
+}
+
+.readonlyParents dt {
+  color: var(--registry-blue);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+.readonlyParents dd {
+  margin-top: 5px;
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+
+.parentForm {
+  display: grid;
+  gap: 11px;
+  padding-top: 17px;
+  border-top: 1px solid var(--line);
+}
+
+.parentForm > div span,
+.parentForm > div strong {
+  display: block;
+}
+
+.parentForm > div span {
+  color: var(--registry-blue);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+.parentForm > div strong {
+  margin-top: 4px;
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+
+.archiveForm {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: center;
+  margin-top: 18px;
+}
+
+.archiveForm p {
+  margin-top: 5px;
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.archiveForm button {
+  padding: 10px 14px;
+  border: 1px solid var(--kennel-red);
+  color: var(--kennel-red);
+  background: var(--white);
+  font-weight: 700;
+}
+
+.archiveForm > p {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+  .recordGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .registryHeader,
+  .recordHeader,
+  .formFooter {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .formGrid,
+  .recordDetails {
+    grid-template-columns: 1fr;
+  }
+
+  .dogForm {
+    padding: 22px;
+  }
+
+  .dogTable th:nth-child(3),
+  .dogTable td:nth-child(3),
+  .dogTable th:nth-child(4),
+  .dogTable td:nth-child(4) {
+    display: none;
+  }
+
+  .archiveForm {
+    grid-template-columns: 1fr;
+  }
+}

@@ -15,6 +15,16 @@ typechain-types
 # Vite / frontend build
 frontend/dist
 frontend/.vite
+frontend/coverage
+coverage
+coverage.json
+.nyc_output
+output/playwright
+.playwright-cli
+
+# Supabase local state
+supabase/.branches
+supabase/.temp
 
 # Generated contract artifacts (produced by deploy script)
 frontend/src/contracts/contract-address.json
