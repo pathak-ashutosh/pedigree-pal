@@ -1,6 +1,6 @@
 # SaaS blueprint
 
-Status: approved architecture. Phases 0–1 core complete; Phase 2 foundations active July 2026.
+Status: approved architecture. Phase 0 complete, Phase 1 core complete, Phase 2 active, Phase 3 planned ([trust layer plan](trust-layer-plan.md)), Phase 4 not started. Live status and next steps: [status.md](status.md). Last updated 2026-07-17.
 
 ## Outcome
 
@@ -98,7 +98,7 @@ Every tenant-owned row carries `organization_id`. Access is enforced in applicat
 
 ## Delivery phases
 
-### 0. Stabilize
+### 0. Stabilize — ✅ complete
 
 - CI, dependency automation, supported runtimes, security policy
 - Fix critical/high exploitable dependencies
@@ -107,7 +107,7 @@ Every tenant-owned row carries `organization_id`. Access is enforced in applicat
 
 Exit: reproducible green checks; no known critical production exposure.
 
-### 1. SaaS core
+### 1. SaaS core — ✅ core complete
 
 - Next.js/TypeScript app shell
 - PostgreSQL schema, migrations, seed data
@@ -116,7 +116,7 @@ Exit: reproducible green checks; no known critical production exposure.
 
 Exit: authenticated tenant isolation proven by integration tests.
 
-### 2. Monetization and operations
+### 2. Monetization and operations — 🔶 active
 
 - Stripe products, checkout, portal, webhooks, entitlements
 - Email, onboarding, admin/support console, product analytics
@@ -124,7 +124,7 @@ Exit: authenticated tenant isolation proven by integration tests.
 
 Exit: test-clock billing lifecycle and support workflows pass end-to-end.
 
-### 3. Trust layer
+### 3. Trust layer — 📝 planned (not started)
 
 See the detailed [trust layer plan](trust-layer-plan.md).
 
@@ -134,7 +134,7 @@ See the detailed [trust layer plan](trust-layer-plan.md).
 
 Exit: reorg-safe indexing and disaster replay tested on testnet.
 
-### 4. Launch readiness
+### 4. Launch readiness — ⏳ not started
 
 - Staging/prod CI/CD, observability, alerts, status page
 - Backup restore, incident, key-rotation, chain-pause, and rollback drills
