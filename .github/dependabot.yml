@@ -21,6 +21,15 @@ updates:
     groups:
       frontend:
         patterns: ["*"]
+    ignore:
+      # vitest 4 / vite 8 majors change coverage measurement and trip the gate on
+      # the frozen V1 dApp; hold them until a deliberate upgrade. Smaller bumps flow.
+      - dependency-name: vitest
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitest/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: vite
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directory: /apps/web
     schedule:
