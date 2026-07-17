@@ -1,12 +1,26 @@
 {
   "name": "pedigree-pal",
   "version": "1.1.0",
-  "description": "PedigreePal aims to develop a decentralized, secure, and easily accessible system for storing and verifying dog pedigree (ancestry) and ownership information. By leveraging blockchain technology and integrating it with existing pet microchip technology, we will create a user-friendly dApp (decentralized application) that will allow users to access a dog's pedigree information and prove the authenticity of their breed, regardless of location or kennel club membership. The system will also enable veterinarians to access owner information in case a dog is lost or requires medical attention.",
+  "description": "Multi-tenant pedigree records with private evidence and optional blockchain proof.",
   "main": "index.js",
   "scripts": {
-    "test": "npx hardhat test",
-    "test:frontend": "cd frontend && npm test",
-    "test:all": "npx hardhat test && cd frontend && npm test"
+    "build": "npm --prefix frontend run build",
+    "build:saas": "npm --prefix apps/web run build",
+    "check": "npm run test:coverage && npm run build && npm --prefix apps/web run check",
+    "test": "npm run test:contracts",
+    "test:contracts": "hardhat test",
+    "test:coverage": "npm run test:coverage:contracts && npm run test:coverage:frontend",
+    "test:coverage:contracts": "hardhat coverage && node scripts/check-contract-coverage.js",
+    "test:coverage:frontend": "npm --prefix frontend run test:coverage",
+    "test:frontend": "npm --prefix frontend test",
+    "test:saas": "npm --prefix apps/web test",
+    "test:coverage:saas": "npm --prefix apps/web run test:coverage",
+    "test:database": "supabase test db",
+    "test:all": "npm run test:contracts && npm run test:frontend && npm run test:saas"
+  },
+  "engines": {
+    "node": ">=20 <25",
+    "npm": ">=10"
   },
   "repository": {
     "type": "git",
@@ -17,12 +31,15 @@
     "blockchain",
     "dog",
     "pedigree",
+    "saas",
+    "supabase",
+    "nextjs",
     "smart-contract",
     "token",
     "nft"
   ],
   "author": "",
-  "license": "UNLICENSED",
+  "license": "GPL-3.0-only",
   "bugs": {
     "url": "https://github.com/pathak-ashutosh/pedigree-pal/issues"
   },
