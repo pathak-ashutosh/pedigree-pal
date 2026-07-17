@@ -1,0 +1,27 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      hardhat:
+        patterns: ["hardhat", "@nomicfoundation/*"]
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    groups:
+      frontend:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /apps/web
+    schedule:
+      interval: weekly
+    groups:
+      saas-web:
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

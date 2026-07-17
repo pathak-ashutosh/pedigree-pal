@@ -1,28 +1,5 @@
 import { describe, it, expect } from 'vitest';
-
-// Extracted reducer logic from Dapp.jsx — same implementation
-const initialState = {
-  selectedAddress: undefined,
-  transactionError: undefined,
-  networkError: undefined,
-  txBeingSent: undefined,
-  register: null,
-  seePedigree: null,
-  contractReady: false,
-  dogId: undefined,
-  name: undefined,
-  breed: undefined,
-  age: undefined,
-  sex: undefined,
-  mother: undefined,
-  father: undefined,
-  owner: undefined,
-  lastRegistered: null,
-};
-
-function reducer(state, patch) {
-  return { ...state, ...patch };
-}
+import { initialState, reducer } from '../components/Dapp';
 
 describe('Dapp reducer', () => {
   it('returns initial state when patched with nothing', () => {

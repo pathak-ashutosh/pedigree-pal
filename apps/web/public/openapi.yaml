@@ -1,0 +1,73 @@
+openapi: 3.1.0
+info:
+  title: PedigreePal API
+  version: 1.0.0
+  license:
+    name: GPL-3.0-only
+paths:
+  /api/v1/dogs:
+    get:
+      operationId: listDogs
+      summary: List active tenant dog records
+      security:
+        - bearerApiKey: []
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string, maxLength: 80 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        "200":
+          description: Tenant dog records
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Dog" }
+                  meta:
+                    type: object
+                    required: [count, requestId]
+                    properties:
+                      count: { type: integer }
+                      requestId: { type: string }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
+components:
+  securitySchemes:
+    bearerApiKey:
+      type: http
+      scheme: bearer
+      bearerFormat: pp_live
+  responses:
+    Error:
+      description: Safe error response
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error: { type: string }
+  schemas:
+    Dog:
+      type: object
+      required: [id, registered_name, breed, sex, birth_date, status, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        registered_name: { type: string }
+        call_name: { type: [string, "null"] }
+        breed: { type: string }
+        sex: { type: string, enum: [male, female, unknown] }
+        birth_date: { type: string, format: date }
+        status: { type: string, enum: [active, retired, deceased] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
