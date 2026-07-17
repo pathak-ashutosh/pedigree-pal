@@ -30,15 +30,11 @@
 }
 
 .brandMark {
-  display: grid;
+  display: block;
   width: 35px;
   height: 35px;
-  place-items: center;
-  border: 1px solid var(--ink);
-  background: var(--tag-yellow);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  box-shadow: 4px 4px 0 var(--ink);
+  border-radius: 9px;
+  box-shadow: 3px 3px 0 var(--ink);
 }
 
 .nav {
