@@ -7,6 +7,13 @@ updates:
     groups:
       hardhat:
         patterns: ["hardhat", "@nomicfoundation/*"]
+    ignore:
+      # Hardhat 3 requires an ESM migration; the V1 contract is frozen during the
+      # SaaS migration, so hold at v2 until a deliberate upgrade.
+      - dependency-name: hardhat
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@nomicfoundation/*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directory: /frontend
     schedule:
@@ -21,6 +28,11 @@ updates:
     groups:
       saas-web:
         patterns: ["*"]
+    ignore:
+      # ESLint 10 breaks eslint-config-next@16's bundled typescript-eslint.
+      # Hold at v9 until eslint-config-next supports ESLint 10.
+      - dependency-name: eslint
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
