@@ -1,0 +1,167 @@
+.developerPage {
+  display: grid;
+  gap: 18px;
+}
+
+.operations {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 36px;
+}
+
+.operations article {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  background: var(--white);
+}
+
+.operations span,
+.sectionLead > p {
+  color: var(--registry-blue);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.operations strong {
+  font-family: var(--font-display);
+  font-size: 32px;
+}
+
+.apiSection {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.65fr) 1.35fr;
+  gap: 36px;
+  padding: 34px;
+  border: 1px solid var(--line);
+  background: var(--white);
+}
+
+.sectionLead h2 {
+  margin-top: 9px;
+  font-family: var(--font-display);
+  font-size: 36px;
+}
+
+.sectionLead > span {
+  display: block;
+  margin-top: 14px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.sectionLead pre {
+  overflow: auto;
+  margin-top: 24px;
+  padding: 14px;
+  color: var(--white);
+  background: var(--ink);
+  font-size: 10px;
+}
+
+.keyConsole {
+  display: grid;
+  gap: 22px;
+}
+
+.createForm {
+  padding: 20px;
+  border: 1px solid var(--line);
+  background: var(--powder);
+}
+
+.createForm label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.createForm > div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+}
+
+.createForm input {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  background: var(--white);
+}
+
+.createForm button,
+.revokeForm button {
+  padding: 11px 15px;
+  border: 1px solid var(--ink);
+  color: var(--white);
+  background: var(--registry-blue);
+  cursor: pointer;
+}
+
+.createForm p,
+.revokeForm small {
+  display: block;
+  margin-top: 9px;
+  font-size: 11px;
+}
+
+.rawKey {
+  display: block;
+  overflow-wrap: anywhere;
+  margin-top: 12px;
+  padding: 11px;
+  color: var(--white);
+  background: var(--ink);
+}
+
+.keyList {
+  list-style: none;
+}
+
+.keyList li {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) 100px 120px 90px;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 10px;
+}
+
+.keyList li div {
+  display: grid;
+  gap: 5px;
+}
+
+.keyList time,
+.keyList li > span,
+.keyList em {
+  color: var(--ink-soft);
+}
+
+.keyList em {
+  font-style: normal;
+  text-transform: uppercase;
+}
+
+.revokeForm button {
+  padding: 7px 10px;
+  color: var(--kennel-red);
+  background: transparent;
+}
+
+@media (max-width: 900px) {
+  .apiSection,
+  .operations {
+    grid-template-columns: 1fr;
+  }
+
+  .keyList li {
+    grid-template-columns: 1fr 1fr;
+  }
+}

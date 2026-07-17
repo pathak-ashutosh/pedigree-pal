@@ -1,0 +1,59 @@
+.auditPage {
+  display: grid;
+  gap: 38px;
+}
+
+.auditPage header > span {
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  background: var(--white);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.auditPage ol {
+  padding: 0 28px;
+  border: 1px solid var(--line);
+  background: var(--white);
+  list-style: none;
+}
+
+.auditPage li {
+  display: grid;
+  grid-template-columns: 70px 1fr 1fr 1fr 150px;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+  align-items: center;
+  font-size: 10px;
+}
+
+.auditPage li strong {
+  color: var(--kennel-red);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+
+.auditPage li span {
+  text-transform: capitalize;
+}
+
+.auditPage li code,
+.auditPage time {
+  overflow: hidden;
+  color: var(--ink-soft);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .auditPage li {
+    grid-template-columns: 70px 1fr;
+  }
+
+  .auditPage li code,
+  .auditPage time {
+    grid-column: 2;
+  }
+}
