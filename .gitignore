@@ -26,9 +26,9 @@ output/playwright
 supabase/.branches
 supabase/.temp
 
-# Generated contract artifacts (produced by deploy script)
-frontend/src/contracts/contract-address.json
-frontend/src/contracts/PedigreePal.json
+# NOTE: Legacy V1 dApp contract artifacts (frontend/src/contracts/*.json) are
+# committed on purpose — the contract is frozen during the SaaS migration and the
+# frontend build/tests import them. Regenerate via scripts/deploy.js if it changes.
 
 # OS
 .DS_Store
