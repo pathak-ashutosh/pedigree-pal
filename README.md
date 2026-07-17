@@ -65,7 +65,7 @@ Production deployment, incident, backup/restore, and billing replay procedures l
 
 ## Blockchain
 
-Blockchain is an optional, planned trust layer (Phase 3 in the [SaaS blueprint](docs/saas-blueprint.md)): tamper-evident hash attestations only, never private customer data. It is not part of the current system — the retired V1 wallet dApp and Solidity contract have been removed in favor of a fresh V2 attestation design to be built later.
+Blockchain is an optional, planned trust layer (Phase 3 in the [SaaS blueprint](docs/saas-blueprint.md)): tamper-evident hash attestations only, never private customer data. It is not part of the current system — the retired V1 wallet dApp and Solidity contract have been removed in favor of a fresh V2 attestation design. See the [trust layer plan](docs/trust-layer-plan.md).
 
 ## Security
 
