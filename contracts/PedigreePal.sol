@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.0;
 
 contract PedigreePal {
@@ -23,11 +23,6 @@ contract PedigreePal {
 
     constructor() {
         owner = msg.sender;
-    }
-
-    modifier onlyOwner() {
-        require(owner == msg.sender, "You are not the owner");
-        _;
     }
 
     function registerDog(string memory _name, string calldata _breed, string calldata _sex, uint _age, uint _mother, uint _father) public {
