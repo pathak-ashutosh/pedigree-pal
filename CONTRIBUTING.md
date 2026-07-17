@@ -12,10 +12,10 @@ Follow the [Getting Started](README.md#getting-started) section in the README to
    ```bash
    git checkout -b feat/your-feature dev
    ```
-2. Make changes, write tests where applicable
-3. Run the test suite:
+2. Make changes and add regression tests
+3. Run the release gate:
    ```bash
-   npx hardhat test
+   npm run check
    ```
 4. Open a PR targeting `dev` (not `main`)
 
@@ -48,12 +48,29 @@ docs: update contract ABI reference
 - Keep components small and focused
 - State management lives in `Dapp.jsx` via `useReducer`
 - Use DaisyUI components where possible before writing custom CSS
+- Use the structured logger; never call `console.*` directly or log customer/wallet data
+- Preserve the coverage thresholds in [docs/testing.md](docs/testing.md)
 - Run the dev server (`cd frontend && npm start`) to verify UI changes
+
+## SaaS Changes
+
+- Keep business rules in `apps/web/src/domain`; keep provider access at server boundaries
+- Verify auth with server claims; enforce tenant access again with PostgreSQL RLS
+- Add structured events through the server logger; never log identity, session, dog, or evidence data
+- Test every success, denial, and provider-failure path; preserve per-file coverage gates
+- Run `npm --prefix apps/web run check`
+
+## Database Changes
+
+- Add forward-only migrations under `supabase/migrations`
+- Enable RLS on every exposed table and add behavioral pgTAP tenant tests
+- Run `supabase db start`, `supabase test db`, and `supabase db lint --local --level warning`
+- Never change production schema through the dashboard without capturing a reviewed migration
 
 ## Code Style
 
 - Solidity: follow the [Solidity Style Guide](https://docs.soliditylang.org/en/latest/style-guide.html)
-- JavaScript/JSX: 2-space indent, single quotes, no semicolons preferred
+- JavaScript/JSX: follow the existing file style; automated formatting will be added during TypeScript migration
 
 ## Reporting Issues
 

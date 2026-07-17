@@ -4,7 +4,7 @@
 
 **File:** `contracts/PedigreePal.sol`
 **Compiler:** Solidity ^0.8.0 (configured for 0.8.28)
-**License:** MIT
+**License:** GPL-3.0-only
 
 The `PedigreePal` contract is the sole on-chain component. It maintains a registry of dogs keyed by auto-incrementing integer IDs.
 
@@ -15,7 +15,7 @@ The `PedigreePal` contract is the sole on-chain component. It maintains a regist
 | Variable | Type | Description |
 |---|---|---|
 | `owner` | `address` | Contract deployer address |
-| `dogCount` | `uint` | Total number of registered dogs (also used as next ID) |
+| `dogId` | `uint` | Next dog ID; also equals the number registered |
 | `dogs` | `mapping(uint => Dog)` | Registry mapping dog ID to Dog struct |
 
 ---
@@ -46,12 +46,12 @@ struct Dog {
 ```solidity
 function registerDog(
     string memory _name,
+    string calldata _breed,
+    string calldata _sex,
     uint _age,
-    string memory _breed,
-    string memory _sex,
     uint _mother,
     uint _father
-) public returns (uint)
+) public
 ```
 
 Registers a new dog and stores it in the `dogs` mapping.
@@ -67,9 +67,9 @@ Registers a new dog and stores it in the `dogs` mapping.
 | `_mother` | `uint` | ID of registered mother; `0` if unknown |
 | `_father` | `uint` | ID of registered father; `0` if unknown |
 
-**Returns:** `uint` — the newly assigned dog ID
+**Returns:** nothing
 
-**Emits:** `Register(id, name, owner)`
+**Emits:** `Register(name, breed, sex, age, mother, father)`
 
 **Access:** Public — any address can register a dog
 
@@ -100,31 +100,19 @@ Returns the full `Dog` struct for a given ID.
 ### `Register`
 
 ```solidity
-event Register(uint id, string name, address owner);
+event Register(string name, string breed, string sex, uint age, uint mother, uint father);
 ```
 
 Emitted when a new dog is successfully registered.
 
 | Field | Type | Description |
 |---|---|---|
-| `id` | `uint` | Assigned dog ID |
 | `name` | `string` | Dog's name |
-| `owner` | `address` | Address that called `registerDog` |
-
----
-
-## Modifiers
-
-### `onlyOwner`
-
-```solidity
-modifier onlyOwner() {
-    require(msg.sender == owner, "Not the contract owner");
-    _;
-}
-```
-
-Restricts a function to the contract deployer. Not currently applied to public-facing functions — intended for future administrative operations.
+| `breed` | `string` | Breed |
+| `sex` | `string` | Sex value supplied by caller |
+| `age` | `uint` | Age supplied by caller |
+| `mother` | `uint` | Mother ID supplied by caller |
+| `father` | `uint` | Father ID supplied by caller |
 
 ---
 
@@ -151,4 +139,5 @@ npx hardhat run scripts/deploy.js --network amoy
 - **No update/deletion** — dog records are immutable once written
 - **No access control on registration** — any wallet can register any dog
 - **All data public** — owner contact details are exposed as an Ethereum address; full PII encryption is on the roadmap
-- **Sequential IDs** — ID `0` is the zero value and is used to mean "unknown parent"; valid dogs start at ID `1`
+- **Ambiguous ID zero** — the first valid dog is ID `0`, while the UI also instructs users to use `0` for an unknown parent
+- **Unknown lookup ambiguity** — unregistered IDs return a zero-value struct instead of reverting or reporting absence
