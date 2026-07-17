@@ -10,9 +10,7 @@ PedigreePal becomes a multi-tenant registry and verification service for owners,
 
 Working baseline:
 
-- Solidity contract, React client, wallet connection
-- 17 contract tests, 96 legacy frontend tests, 138 SaaS tests, 54 pgTAP assertions
-- Local and Polygon Amoy deployment flow
+- 138 SaaS tests, 54 pgTAP assertions
 - Next.js/TypeScript product, magic-link auth, verified claims, org onboarding, dog registry/pedigrees
 - Tenant RLS, database entitlements, private storage, audit, quotas, idempotency, transactional outbox
 - Stripe checkout/webhooks, billing UI, API keys, versioned REST/OpenAPI, operator/audit views
@@ -23,12 +21,8 @@ Launch blockers:
 
 - External launch configuration remains: managed host/database, Stripe products, email delivery, telemetry sink/alerts, backups/PITR
 - Customer evidence upload/review, invitations, data export/deletion, outbound worker delivery, analytics, and support console remain
-- Contract accepts unverified data, has no corrections or transfers, and returns an empty record for unknown IDs
-- Dog ID `0` is both a valid first record and documented as the unknown-parent sentinel
-- UI is locked to chain `31337`; deployment config is written into source
-- Public-chain writes expose every stored field forever
 - No staging/production release environments or exercised restore/incident drills yet
-- July 2026 dependency baseline remediated for production packages; Hardhat 3 migration remains separate
+- July 2026 dependency baseline remediated for production packages
 
 ## Recommended architecture
 

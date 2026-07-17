@@ -14,7 +14,7 @@ Browser
        -> optional Polygon attestations
 ```
 
-`apps/web` is the SaaS application. `frontend` and `contracts/PedigreePal.sol` remain the tested V1 dApp during migration; they are not the production system of record.
+`apps/web` is the SaaS application and the production system of record. On-chain attestations are a planned trust layer (Phase 3 in the [SaaS blueprint](saas-blueprint.md)), not part of the current system.
 
 ## Trust boundaries
 
@@ -47,4 +47,4 @@ Database constraints enforce chronology, parent sex, same-organization links, im
 
 ## Delivery
 
-CI independently gates contracts, legacy frontend, SaaS web, container builds, database migrations/pgTAP/lint, and production dependency audits. Production schema changes must be forward-compatible migrations with a tested restore/rollback plan.
+CI independently gates SaaS web, container builds, database migrations/pgTAP/lint, and production dependency audits. Production schema changes must be forward-compatible migrations with a tested restore/rollback plan.
