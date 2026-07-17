@@ -18,7 +18,7 @@ PedigreePal is becoming a production SaaS. PostgreSQL is operational truth; bloc
 - Standalone container image, production builds, dependency automation, security policy
 - Coverage-gated unit/component tests, pgTAP RLS tests, database lint
 
-See [SaaS blueprint](docs/saas-blueprint.md), [architecture](docs/architecture.md), [testing](docs/testing.md), and [observability](docs/observability.md).
+Current progress and next steps: [status](docs/status.md). See also [SaaS blueprint](docs/saas-blueprint.md), [architecture](docs/architecture.md), [testing](docs/testing.md), and [observability](docs/observability.md).
 
 ## Repository
 
