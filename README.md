@@ -16,8 +16,7 @@ PedigreePal is becoming a production SaaS. PostgreSQL is operational truth; bloc
 - Retry-safe Stripe checkout/webhooks and database-enforced entitlements
 - Structured JSON logs with tested redaction, request IDs, liveness, and readiness APIs
 - Standalone container image, production builds, dependency automation, security policy
-- Coverage-gated unit/component/contract tests, pgTAP RLS tests, database lint
-- Tested legacy Solidity/Vite dApp retained during migration
+- Coverage-gated unit/component tests, pgTAP RLS tests, database lint
 
 See [SaaS blueprint](docs/saas-blueprint.md), [architecture](docs/architecture.md), [testing](docs/testing.md), and [observability](docs/observability.md).
 
@@ -26,9 +25,6 @@ See [SaaS blueprint](docs/saas-blueprint.md), [architecture](docs/architecture.m
 ```text
 apps/web/       production SaaS web/BFF
 supabase/       migrations, RLS/storage policies, pgTAP tests
-frontend/       legacy V1 wallet dApp
-contracts/      legacy V1 Solidity contract
-test/           Solidity tests
 docs/           architecture and operating standards
 ```
 
@@ -37,13 +33,10 @@ docs/           architecture and operating standards
 - Node.js 20–24 and npm 10+
 - Docker for local Supabase/database tests
 - Supabase CLI 2.109.1 (CI pins it)
-- MetaMask only for legacy V1 development
 
 ## Setup
 
 ```bash
-npm ci
-npm ci --prefix frontend
 npm ci --prefix apps/web
 cp apps/web/.env.example apps/web/.env.local
 ```
@@ -63,26 +56,16 @@ Open `http://localhost:3000`. Probes are `GET /api/health` and `GET /api/ready`.
 npm run check
 supabase test db
 supabase db lint --local --level warning
-npm audit --omit=dev --audit-level=high
-npm audit --prefix frontend --omit=dev --audit-level=high
 npm audit --prefix apps/web --omit=dev --audit-level=high
 ```
 
-CI runs contract, legacy UI, SaaS UI, fresh-database, RLS, lint, build, and production dependency gates independently.
+CI runs SaaS UI, fresh-database, RLS, lint, build, and production dependency gates independently.
 
 Production deployment, incident, backup/restore, and billing replay procedures live in [docs/deployment.md](docs/deployment.md) and [docs/runbooks](docs/runbooks).
 
-## Legacy V1 dApp
+## Blockchain
 
-The legacy dApp remains for compatibility and contract migration work:
-
-```bash
-npx hardhat node
-npx hardhat run scripts/deploy.js --network localhost
-npm --prefix frontend start
-```
-
-It runs at `http://localhost:5173`. V1 public-chain records are not the SaaS source of truth. See [smart contract notes](docs/smart-contract.md).
+Blockchain is an optional, planned trust layer (Phase 3 in the [SaaS blueprint](docs/saas-blueprint.md)): tamper-evident hash attestations only, never private customer data. It is not part of the current system — the retired V1 wallet dApp and Solidity contract have been removed in favor of a fresh V2 attestation design to be built later.
 
 ## Security
 

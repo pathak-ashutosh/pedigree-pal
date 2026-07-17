@@ -13,33 +13,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  contracts:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run test:coverage:contracts
-
-  frontend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
-      - run: npm run test:coverage
-      - run: npm run build
-
   saas-web:
     runs-on: ubuntu-latest
     defaults:
@@ -69,19 +42,15 @@ jobs:
 
   production-audit:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            frontend/package-lock.json
-            apps/web/package-lock.json
+          cache-dependency-path: apps/web/package-lock.json
       - run: npm ci
-      - run: npm ci --prefix frontend
-      - run: npm ci --prefix apps/web
       - run: npm audit --omit=dev --audit-level=high
-      - run: npm audit --prefix frontend --omit=dev --audit-level=high
-      - run: npm audit --prefix apps/web --omit=dev --audit-level=high
