@@ -3,12 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { generateSalt, hashRecord } from "@/domain/attestation/hash";
+import { RECORD_SCHEMA_VERSION } from "@/domain/attestation/record";
 import { DomainError, validateParentAssignment, type DogReference, type ParentKind } from "@/domain/dogs";
 import { can, type Permission } from "@/domain/rbac";
 import { parseDogFormData } from "@/lib/dogs/input";
 import type { DogActionState } from "@/lib/dogs/state";
 import { getOrganizationAccess, type OrganizationAccess } from "@/lib/organizations/dal";
 import { logger } from "@/lib/server/logger";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const uuidSchema = z.uuid();
 const parentKindSchema = z.enum(["sire", "dam"]);
@@ -259,6 +262,131 @@ export async function setDogParent(
   logger.info({ event: "pedigree.parent_saved", kind: kind.data }, "pedigree parent saved");
   revalidatePath(`/dashboard/${organizationSlug}/dogs/${childId.data}`);
   return { status: "saved", message: `${kind.data === "sire" ? "Sire" : "Dam"} saved.` };
+}
+
+const finalizeFailureMessages: ReadonlyArray<[string, string]> = [
+  ["already finalized", "This record is already finalized."],
+  ["archived records", "Archived records cannot be finalized."],
+  ["changed since it was reviewed", "The record changed while you reviewed it. Reload and try again."],
+  ["not authorized", "Only organization administrators can finalize records."],
+];
+
+export async function finalizeDogRecord(
+  _previousState: DogActionState,
+  formData: FormData,
+): Promise<DogActionState> {
+  const organizationSlug = readString(formData, "organizationSlug");
+  const dogId = uuidSchema.safeParse(readString(formData, "dogId"));
+  if (!dogId.success) {
+    return { status: "error", message: "The dog record ID is invalid." };
+  }
+
+  const access = await authorize(organizationSlug, "dogs:attest");
+  if (!access) {
+    return { status: "error", message: "Only organization administrators can finalize records." };
+  }
+
+  const [dogResult, parentResult] = await Promise.all([
+    access.supabase
+      .from("dogs")
+      .select(
+        "id, organization_id, registered_name, call_name, breed, sex, birth_date, microchip_hash, record_version, updated_at",
+      )
+      .eq("id", dogId.data)
+      .eq("organization_id", access.id)
+      .maybeSingle(),
+    access.supabase
+      .from("dog_parents")
+      .select("kind, parent_id")
+      .eq("child_id", dogId.data)
+      .eq("organization_id", access.id),
+  ]);
+
+  if (dogResult.error || !dogResult.data || parentResult.error) {
+    logger.warn(
+      {
+        event: "attestation.record_lookup_failed",
+        errorCode: dogResult.error?.code ?? parentResult.error?.code ?? "not_found",
+      },
+      "attestation record lookup failed",
+    );
+    return { status: "error", message: "The dog record is unavailable." };
+  }
+
+  const dog = dogResult.data as {
+    id: string;
+    organization_id: string;
+    registered_name: string;
+    call_name: string | null;
+    breed: string;
+    sex: DogReference["sex"];
+    birth_date: string;
+    microchip_hash: string | null;
+    record_version: number;
+    updated_at: string;
+  };
+  const parents = (parentResult.data ?? []) as Array<{ kind: ParentKind; parent_id: string }>;
+  const sireId = parents.find((parent) => parent.kind === "sire")?.parent_id ?? null;
+  const damId = parents.find((parent) => parent.kind === "dam")?.parent_id ?? null;
+
+  const salt = generateSalt();
+  let recordHash: string;
+  try {
+    recordHash = hashRecord(
+      {
+        id: dog.id,
+        organizationId: dog.organization_id,
+        version: dog.record_version,
+        registeredName: dog.registered_name,
+        callName: dog.call_name,
+        breed: dog.breed,
+        sex: dog.sex,
+        birthDate: dog.birth_date,
+        microchipHash: dog.microchip_hash,
+        sireId,
+        damId,
+      },
+      salt,
+    );
+  } catch {
+    logger.warn({ event: "attestation.hash_failed" }, "attestation hash failed");
+    return { status: "error", message: "The record does not meet the attestation schema yet." };
+  }
+
+  // Service-role call: the function trusts the hash only because this server
+  // computed it; tenants cannot execute it directly.
+  const { error: rpcError } = await createAdminClient().rpc("finalize_dog_record", {
+    dog_id: dog.id,
+    acting_user_id: access.userId,
+    record_hash: recordHash,
+    salt,
+    schema_version: RECORD_SCHEMA_VERSION,
+    expected_updated_at: dog.updated_at,
+    expected_sire_id: sireId,
+    expected_dam_id: damId,
+  });
+
+  if (rpcError) {
+    logger.warn(
+      { event: "attestation.finalize_failed", errorCode: rpcError.code },
+      "attestation finalize failed",
+    );
+    const known = finalizeFailureMessages.find(([needle]) => rpcError.message?.includes(needle));
+    return {
+      status: "error",
+      message: known?.[1] ?? "We could not finalize the record. Try again shortly.",
+    };
+  }
+
+  logger.info(
+    { event: "attestation.finalized", recordVersion: dog.record_version },
+    "dog record finalized",
+  );
+  revalidatePath(`/dashboard/${organizationSlug}/dogs/${dog.id}`);
+  return {
+    status: "saved",
+    message: `Version ${dog.record_version} finalized and queued for attestation.`,
+  };
 }
 
 export async function archiveDog(

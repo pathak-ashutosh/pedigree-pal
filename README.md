@@ -34,21 +34,32 @@ docs/           architecture and operating standards
 - Docker for local Supabase/database tests
 - Supabase CLI 2.109.1 (CI pins it)
 
-## Setup
+## Run locally
 
 ```bash
 npm ci --prefix apps/web
 cp apps/web/.env.example apps/web/.env.local
+supabase start
 ```
 
-Start the local SaaS services and copy the API URL/publishable key from `supabase status` into `apps/web/.env.local`:
+`supabase start` boots the local stack (Postgres, auth, storage, mail catcher) and applies every migration in `supabase/migrations`. It prints the values `.env.local` needs — `supabase status` reprints them later:
+
+| `.env.local` key | Value |
+| --- | --- |
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` (as shipped in `.env.example`) |
+| `NEXT_PUBLIC_SUPABASE_URL` | `API URL` — `http://127.0.0.1:54321` |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `anon key` |
+| `SUPABASE_SERVICE_ROLE_KEY` | `service_role key` |
+
+The `STRIPE_*` placeholders in `.env.example` pass validation as-is; only billing flows need real Stripe test-mode values.
 
 ```bash
-supabase start
 npm --prefix apps/web run dev
 ```
 
-Open `http://localhost:3000`. Probes are `GET /api/health` and `GET /api/ready`.
+Open `http://localhost:3000` and sign in with any email address — local magic-link emails are caught by Mailpit at `http://127.0.0.1:54324`, no SMTP needed. Onboarding creates an organization with trial entitlements, after which the registry is fully usable. Probes are `GET /api/health` and `GET /api/ready`.
+
+Useful afterwards: `supabase db reset` re-applies migrations from scratch; `supabase stop` shuts the stack down.
 
 ## Release gate
 

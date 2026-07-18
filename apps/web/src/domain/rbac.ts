@@ -8,6 +8,7 @@ export const permissions = [
   "dogs:read",
   "dogs:write",
   "dogs:delete",
+  "dogs:attest",
   "audit:read",
 ] as const;
 export type Permission = (typeof permissions)[number];
@@ -21,6 +22,7 @@ const rolePermissions: Record<OrganizationRole, ReadonlySet<Permission>> = {
     "dogs:read",
     "dogs:write",
     "dogs:delete",
+    "dogs:attest",
     "audit:read",
   ]),
   member: new Set(["organization:read", "dogs:read", "dogs:write"]),

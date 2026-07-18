@@ -13,6 +13,13 @@ describe("role permissions", () => {
     expect(can("viewer", "dogs:read")).toBe(true);
   });
 
+  it("restricts attestation to administrators", () => {
+    expect(can("owner", "dogs:attest")).toBe(true);
+    expect(can("admin", "dogs:attest")).toBe(true);
+    expect(can("member", "dogs:attest")).toBe(false);
+    expect(can("viewer", "dogs:attest")).toBe(false);
+  });
+
   it("defines all supported roles", () => {
     expect(organizationRoles).toEqual(["owner", "admin", "member", "viewer"]);
   });

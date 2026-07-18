@@ -4,6 +4,7 @@ import { can } from "@/domain/rbac";
 import { requireOrganization } from "@/lib/organizations/dal";
 import { logger } from "@/lib/server/logger";
 import { ArchiveForm } from "./archive-form";
+import { FinalizeForm } from "./finalize-form";
 import { ParentForm, type ParentCandidate } from "./parent-form";
 import styles from "../dogs.module.css";
 
@@ -17,8 +18,17 @@ type DogRecord = {
   microchip_hash: string | null;
   status: string;
   notes: string | null;
+  record_version: number;
+  finalized_at: string | null;
   created_at: string;
   updated_at: string;
+};
+
+type AttestationRow = {
+  record_version: number;
+  record_hash: string;
+  status: "pending" | "confirmed" | "revoked";
+  created_at: string;
 };
 
 type ParentLink = { kind: "sire" | "dam"; parent_id: string };
@@ -38,7 +48,7 @@ export default async function DogDetailPage({
   const { data: dogData, error: dogError } = await access.supabase
     .from("dogs")
     .select(
-      "id, registered_name, call_name, breed, sex, birth_date, microchip_hash, status, notes, created_at, updated_at",
+      "id, registered_name, call_name, breed, sex, birth_date, microchip_hash, status, notes, record_version, finalized_at, created_at, updated_at",
     )
     .eq("organization_id", access.id)
     .eq("id", dogId)
@@ -51,7 +61,7 @@ export default async function DogDetailPage({
   if (!dogData) notFound();
   const dog = dogData as DogRecord;
 
-  const [parentResult, candidateResult] = await Promise.all([
+  const [parentResult, candidateResult, attestationResult] = await Promise.all([
     access.supabase
       .from("dog_parents")
       .select("kind, parent_id")
@@ -66,10 +76,17 @@ export default async function DogDetailPage({
       .lt("birth_date", dog.birth_date)
       .order("registered_name")
       .limit(200),
+    access.supabase
+      .from("attestations")
+      .select("record_version, record_hash, status, created_at")
+      .eq("organization_id", access.id)
+      .eq("dog_id", dog.id)
+      .order("record_version", { ascending: false })
+      .limit(10),
   ]);
 
-  if (parentResult.error || candidateResult.error) {
-    const error = parentResult.error ?? candidateResult.error;
+  if (parentResult.error || candidateResult.error || attestationResult.error) {
+    const error = parentResult.error ?? candidateResult.error ?? attestationResult.error;
     logger.error(
       { event: "pedigree.detail_failed", errorCode: error?.code ?? "unknown" },
       "pedigree detail failed",
@@ -79,7 +96,9 @@ export default async function DogDetailPage({
 
   const parentLinks = (parentResult.data ?? []) as ParentLink[];
   const candidateRows = (candidateResult.data ?? []) as CandidateRow[];
+  const attestations = (attestationResult.data ?? []) as AttestationRow[];
   const mayEdit = can(access.role, "dogs:write");
+  const mayAttest = can(access.role, "dogs:attest");
   const candidates = new Map(candidateRows.map((row) => [row.id, row]));
   const parentFor = (kind: "sire" | "dam"): ParentCandidate | undefined => {
     const link = parentLinks.find((parent) => parent.kind === kind);
@@ -146,6 +165,33 @@ export default async function DogDetailPage({
           )}
         </section>
       </div>
+      <section className={styles.recordCard}>
+        <h2>Record integrity</h2>
+        <p className={styles.help}>
+          {dog.finalized_at
+            ? `Version ${dog.record_version} finalized on ${new Date(dog.finalized_at).toLocaleDateString("en-US")}.`
+            : `Version ${dog.record_version} is a draft — edits are open until it is finalized.`}
+        </p>
+        {attestations.length > 0 ? (
+          <dl className={styles.recordDetails}>
+            {attestations.map((attestation) => (
+              <div key={attestation.record_version}>
+                <dt>Version {attestation.record_version} · {attestation.status}</dt>
+                <dd className={styles.hash}>{attestation.record_hash}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <p className={styles.help}>No attestations yet.</p>
+        )}
+        {mayAttest && !dog.finalized_at && dog.status !== "archived" ? (
+          <FinalizeForm
+            dogId={dog.id}
+            organizationSlug={organizationSlug}
+            recordVersion={dog.record_version}
+          />
+        ) : null}
+      </section>
       {can(access.role, "dogs:delete") ? (
         <ArchiveForm dogId={dog.id} organizationSlug={organizationSlug} />
       ) : null}

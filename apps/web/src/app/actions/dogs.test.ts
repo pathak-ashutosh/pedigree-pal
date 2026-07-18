@@ -2,6 +2,7 @@ import { beforeEach, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getOrganizationAccess: vi.fn(),
+  adminRpc: vi.fn(),
   info: vi.fn(),
   warn: vi.fn(),
   revalidatePath: vi.fn(),
@@ -13,6 +14,9 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/organizations/dal", () => ({
   getOrganizationAccess: mocks.getOrganizationAccess,
 }));
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: () => ({ rpc: mocks.adminRpc }),
+}));
 vi.mock("@/lib/server/logger", () => ({
   logger: { info: mocks.info, warn: mocks.warn },
 }));
@@ -20,7 +24,7 @@ vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
 
 import { initialDogState } from "@/lib/dogs/state";
-import { archiveDog, createDog, setDogParent, updateDog } from "./dogs";
+import { archiveDog, createDog, finalizeDogRecord, setDogParent, updateDog } from "./dogs";
 
 const organizationId = "10000000-0000-4000-8000-000000000001";
 const userId = "00000000-0000-4000-8000-000000000001";
@@ -321,6 +325,90 @@ describe("setDogParent", () => {
     await expect(
       setDogParent(initialDogState, parentForm({ parentId: damId, kind: "dam" })),
     ).resolves.toEqual({ status: "saved", message: "Dam saved." });
+  });
+});
+
+describe("finalizeDogRecord", () => {
+  const dogRow = {
+    id: childId,
+    organization_id: organizationId,
+    registered_name: "Northstar Juniper",
+    call_name: null,
+    breed: "Golden Retriever",
+    sex: "female",
+    birth_date: "2024-01-15",
+    microchip_hash: null,
+    record_version: 1,
+    updated_at: "2026-07-18T12:00:00.000000+00:00",
+  };
+
+  function finalizeQueries(parents: Array<{ kind: string; parent_id: string }> = []) {
+    const dogQuery = queryBuilder({ maybeSingle: { data: dogRow, error: null } });
+    const parentQuery = Object.assign(queryBuilder(), { data: parents, error: null });
+    return [dogQuery, parentQuery];
+  }
+
+  it("rejects invalid IDs and non-administrators", async () => {
+    await expect(
+      finalizeDogRecord(initialDogState, dogForm({ dogId: "bad" })),
+    ).resolves.toMatchObject({ message: /ID is invalid/i });
+    setAccess("member", []);
+    await expect(finalizeDogRecord(initialDogState, dogForm())).resolves.toMatchObject({
+      message: /administrators/i,
+    });
+  });
+
+  it("reports an unavailable record", async () => {
+    setAccess("owner", [
+      queryBuilder({ maybeSingle: { data: null, error: null } }),
+      Object.assign(queryBuilder(), { data: [], error: null }),
+    ]);
+    await expect(finalizeDogRecord(initialDogState, dogForm())).resolves.toMatchObject({
+      status: "error",
+      message: /unavailable/i,
+    });
+  });
+
+  it("hashes the record and finalizes through the service-role function", async () => {
+    mocks.adminRpc.mockResolvedValue({ data: null, error: null });
+    setAccess("owner", finalizeQueries([{ kind: "sire", parent_id: parentId }]));
+
+    await expect(finalizeDogRecord(initialDogState, dogForm())).resolves.toEqual({
+      status: "saved",
+      message: "Version 1 finalized and queued for attestation.",
+    });
+    expect(mocks.adminRpc).toHaveBeenCalledWith("finalize_dog_record", {
+      dog_id: childId,
+      acting_user_id: userId,
+      record_hash: expect.stringMatching(/^[a-f0-9]{64}$/),
+      salt: expect.stringMatching(/^[a-f0-9]{64}$/),
+      schema_version: 1,
+      expected_updated_at: dogRow.updated_at,
+      expected_sire_id: parentId,
+      expected_dam_id: null,
+    });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith(`/dashboard/northstar/dogs/${childId}`);
+  });
+
+  it("maps guarded-function failures to friendly messages", async () => {
+    const cases: Array<[string, RegExp]> = [
+      ["record is already finalized", /already finalized/i],
+      ["record changed since it was reviewed", /reload and try again/i],
+      ["archived records cannot be finalized", /archived records/i],
+      ["not authorized to finalize this record", /administrators/i],
+      ["unexpected", /could not finalize/i],
+    ];
+    for (const [providerMessage, expected] of cases) {
+      mocks.adminRpc.mockResolvedValue({
+        data: null,
+        error: { code: "55000", message: providerMessage },
+      });
+      setAccess("owner", finalizeQueries());
+      await expect(finalizeDogRecord(initialDogState, dogForm())).resolves.toMatchObject({
+        status: "error",
+        message: expected,
+      });
+    }
   });
 });
 

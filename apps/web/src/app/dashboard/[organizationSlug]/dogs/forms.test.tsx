@@ -6,9 +6,11 @@ vi.mock("@/app/actions/dogs", () => ({
   updateDog: vi.fn(),
   setDogParent: vi.fn(),
   archiveDog: vi.fn(),
+  finalizeDogRecord: vi.fn(),
 }));
 
 import { ArchiveFields, ArchiveForm } from "./[dogId]/archive-form";
+import { FinalizeFields, FinalizeForm } from "./[dogId]/finalize-form";
 import { ParentFields, ParentForm } from "./[dogId]/parent-form";
 import { DogFields, DogForm } from "./dog-form";
 
@@ -88,6 +90,29 @@ describe("parent form", () => {
     expect(screen.getByText("Not assigned")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /saving/i })).toBeDisabled();
     expect(screen.getByRole("status")).toHaveTextContent(/valid parent/i);
+  });
+});
+
+describe("finalize form", () => {
+  it("renders wrapper and pending error states", () => {
+    const { rerender } = render(
+      <FinalizeForm dogId={dogId} organizationSlug="northstar" recordVersion={3} />,
+    );
+    expect(screen.getByText(/finalize version 3/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /finalize record/i })).toBeEnabled();
+
+    rerender(
+      <FinalizeFields
+        dogId={dogId}
+        formAction={vi.fn()}
+        organizationSlug="northstar"
+        pending
+        recordVersion={3}
+        state={{ status: "error", message: "The record changed while you reviewed it." }}
+      />,
+    );
+    expect(screen.getByRole("button", { name: /finalizing/i })).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent(/record changed/i);
   });
 });
 
