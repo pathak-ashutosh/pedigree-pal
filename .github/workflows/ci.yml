@@ -36,6 +36,9 @@ jobs:
       - uses: supabase/setup-cli@v3
         with:
           version: 2.109.1
+      # 54320-54322 sit inside Linux's ephemeral range, so an outbound
+      # connection can claim one before the containers bind it.
+      - run: sudo sysctl -w net.ipv4.ip_local_reserved_ports=54320-54329
       - run: supabase db start
       - run: supabase test db
       - run: supabase db lint --local --level warning
