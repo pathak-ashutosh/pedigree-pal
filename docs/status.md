@@ -1,6 +1,6 @@
 # Project status
 
-Last updated: 2026-07-17.
+Last updated: 2026-07-18.
 
 Living "where we are / resume here" doc. Full roadmap: [saas-blueprint.md](saas-blueprint.md). Phase 3 design: [trust-layer-plan.md](trust-layer-plan.md).
 
@@ -23,7 +23,7 @@ Living "where we are / resume here" doc. Full roadmap: [saas-blueprint.md](saas-
 
 ## Open items — resume here
 
-1. **Magic-link redirect goes to `localhost`.** Root cause confirmed: the deployed app reads `NEXT_PUBLIC_APP_URL` as undefined and falls back to the `http://localhost:3000` default. Fix: set `NEXT_PUBLIC_APP_URL=https://pedigree-pal.vercel.app` in Vercel for the **Production** scope and **redeploy** (it is build-time inlined). Then set Supabase → Authentication → URL Configuration: **Site URL** = the Vercel URL and **Redirect URLs** include `https://pedigree-pal.vercel.app/**`. Optional hardening: derive the origin from request headers in `apps/web/src/app/actions/auth.ts` so a missing env var can never produce a localhost link.
+1. **Magic-link redirect goes to `localhost`.** Code hardening done (2026-07-18): `requestMagicLink` now derives the origin from `x-forwarded-proto`/`x-forwarded-host` via `apps/web/src/lib/server/origin.ts`, falling back to `NEXT_PUBLIC_APP_URL` — a missing env var can no longer produce a localhost link once deployed. Vercel already has `NEXT_PUBLIC_APP_URL` in Production (value unverified; latest deploy postdates it). Remaining manual steps: Supabase → Authentication → URL Configuration: **Site URL** = `https://pedigree-pal.vercel.app`, **Redirect URLs** include `https://pedigree-pal.vercel.app/**`; then merge `dev` → `main` to deploy and verify sign-in end-to-end.
 2. **Stripe test setup:** create test products/prices, add a webhook to `/api/v1/webhooks/stripe`, set `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_*` in Vercel.
 3. **Email:** Supabase's built-in sender is rate-limited (a few/hour) — wire custom SMTP (e.g. Resend free tier) for real sign-in volume.
 
