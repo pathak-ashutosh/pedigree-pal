@@ -10,6 +10,15 @@ alter table public.dogs
   add column record_version integer not null default 1 check (record_version >= 1),
   add column finalized_at timestamptz;
 
+-- Hosted Supabase gives the service role full DML through default privileges,
+-- and the admin-client API routes (readiness, dog API, billing) depend on that.
+-- Migration-created tables in the local/CI stack miss those defaults, so state
+-- them explicitly to keep every environment identical; service_role is the
+-- trusted backend and bypasses RLS by design.
+grant select, insert, update, delete on all tables in schema public to service_role;
+alter default privileges in schema public
+  grant select, insert, update, delete on tables to service_role;
+
 -- Both columns are deliberately absent from the authenticated update grant:
 -- clients read them but only triggers and finalize_dog_record() may write them.
 
@@ -50,6 +59,13 @@ as $$
 declare
   target_child_id uuid := case when tg_op = 'DELETE' then old.child_id else new.child_id end;
 begin
+  if tg_op = 'UPDATE'
+    and new.child_id is not distinct from old.child_id
+    and new.parent_id is not distinct from old.parent_id
+    and new.kind is not distinct from old.kind then
+    return new;
+  end if;
+
   update public.dogs
   set record_version = record_version
         + (case when finalized_at is not null then 1 else 0 end),
@@ -64,14 +80,18 @@ create trigger dog_parents_touch_child
 after insert or update or delete on public.dog_parents
 for each row execute function public.touch_child_on_parent_change();
 
--- Finalizes a dog record: verifies the caller reviewed the exact bytes being
--- attested, then atomically inserts the attestation, requests batching via the
--- outbox, and stamps the dog. The hash itself is computed by the application —
--- the expected_* arguments are how the database confirms nothing moved between
--- that computation and this call (the dogs row lock serializes against the
+-- Finalizes a dog record: verifies the acting user reviewed the exact bytes
+-- being attested, then atomically inserts the attestation, requests batching via
+-- the outbox, and stamps the dog. Executable by the service role only — the hash
+-- is trusted because the application computes it server-side; granting this to
+-- authenticated would let a tenant submit an arbitrary record_hash through
+-- PostgREST and attest a fingerprint that encodes nothing. The expected_*
+-- arguments are how the database confirms nothing moved between the app's hash
+-- computation and this call (the dogs row lock serializes against the
 -- parent-change trigger's update).
 create or replace function public.finalize_dog_record(
   dog_id uuid,
+  acting_user_id uuid,
   record_hash text,
   salt text,
   schema_version smallint,
@@ -85,13 +105,12 @@ security definer
 set search_path = ''
 as $$
 declare
-  current_user_id uuid := auth.uid();
   dog_row public.dogs;
   current_sire_id uuid;
   current_dam_id uuid;
   created_attestation public.attestations;
 begin
-  if current_user_id is null then
+  if finalize_dog_record.acting_user_id is null then
     raise exception using errcode = '42501', message = 'authentication required';
   end if;
 
@@ -103,11 +122,24 @@ begin
   if not found then
     raise exception using errcode = '42501', message = 'not authorized to finalize this record';
   end if;
-  if not public.has_org_role(
-      dog_row.organization_id, array['owner', 'admin']::public.organization_role[])
+  if not exists (
+      select 1
+      from public.organization_memberships membership
+      where membership.organization_id = dog_row.organization_id
+        and membership.user_id = finalize_dog_record.acting_user_id
+        and membership.role in ('owner', 'admin')
+    )
     or not public.has_entitlement(dog_row.organization_id, 'registry.write') then
     raise exception using errcode = '42501', message = 'not authorized to finalize this record';
   end if;
+
+  -- The service role carries no JWT, so impersonate the acting user for the
+  -- rest of this transaction; the audit triggers then record who finalized.
+  perform set_config(
+    'request.jwt.claims',
+    json_build_object('sub', finalize_dog_record.acting_user_id, 'role', 'authenticated')::text,
+    true
+  );
 
   if dog_row.status = 'archived' then
     raise exception using errcode = '55000', message = 'archived records cannot be finalized';
@@ -166,7 +198,7 @@ begin
   );
 
   update public.dogs
-  set finalized_at = now(), updated_by = current_user_id
+  set finalized_at = now(), updated_by = finalize_dog_record.acting_user_id
   where id = dog_row.id;
 
   return created_attestation;
@@ -174,8 +206,8 @@ end;
 $$;
 
 revoke all on function
-  public.finalize_dog_record(uuid, text, text, smallint, timestamptz, uuid, uuid)
-from public;
+  public.finalize_dog_record(uuid, uuid, text, text, smallint, timestamptz, uuid, uuid)
+from public, anon, authenticated;
 grant execute on function
-  public.finalize_dog_record(uuid, text, text, smallint, timestamptz, uuid, uuid)
-to authenticated;
+  public.finalize_dog_record(uuid, uuid, text, text, smallint, timestamptz, uuid, uuid)
+to service_role;

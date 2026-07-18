@@ -11,6 +11,7 @@ import { parseDogFormData } from "@/lib/dogs/input";
 import type { DogActionState } from "@/lib/dogs/state";
 import { getOrganizationAccess, type OrganizationAccess } from "@/lib/organizations/dal";
 import { logger } from "@/lib/server/logger";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const uuidSchema = z.uuid();
 const parentKindSchema = z.enum(["sire", "dam"]);
@@ -352,8 +353,11 @@ export async function finalizeDogRecord(
     return { status: "error", message: "The record does not meet the attestation schema yet." };
   }
 
-  const { error: rpcError } = await access.supabase.rpc("finalize_dog_record", {
+  // Service-role call: the function trusts the hash only because this server
+  // computed it; tenants cannot execute it directly.
+  const { error: rpcError } = await createAdminClient().rpc("finalize_dog_record", {
     dog_id: dog.id,
+    acting_user_id: access.userId,
     record_hash: recordHash,
     salt,
     schema_version: RECORD_SCHEMA_VERSION,

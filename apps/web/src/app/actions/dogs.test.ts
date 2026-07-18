@@ -2,6 +2,7 @@ import { beforeEach, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getOrganizationAccess: vi.fn(),
+  adminRpc: vi.fn(),
   info: vi.fn(),
   warn: vi.fn(),
   revalidatePath: vi.fn(),
@@ -12,6 +13,9 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/organizations/dal", () => ({
   getOrganizationAccess: mocks.getOrganizationAccess,
+}));
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: () => ({ rpc: mocks.adminRpc }),
 }));
 vi.mock("@/lib/server/logger", () => ({
   logger: { info: mocks.info, warn: mocks.warn },
@@ -46,11 +50,7 @@ function queryBuilder({
   return query;
 }
 
-function setAccess(
-  role: "owner" | "admin" | "member" | "viewer",
-  queries: Query[],
-  rpc = vi.fn(),
-) {
+function setAccess(role: "owner" | "admin" | "member" | "viewer", queries: Query[]) {
   const from = vi.fn();
   queries.forEach((query) => from.mockReturnValueOnce(query));
   mocks.getOrganizationAccess.mockResolvedValue({
@@ -59,9 +59,9 @@ function setAccess(
     slug: "northstar",
     role,
     userId,
-    supabase: { from, rpc },
+    supabase: { from },
   });
-  return { from, rpc };
+  return from;
 }
 
 function dogForm(overrides: Record<string, string> = {}): FormData {
@@ -369,16 +369,17 @@ describe("finalizeDogRecord", () => {
     });
   });
 
-  it("hashes the record and finalizes through the guarded function", async () => {
-    const rpc = vi.fn().mockResolvedValue({ data: null, error: null });
-    setAccess("owner", finalizeQueries([{ kind: "sire", parent_id: parentId }]), rpc);
+  it("hashes the record and finalizes through the service-role function", async () => {
+    mocks.adminRpc.mockResolvedValue({ data: null, error: null });
+    setAccess("owner", finalizeQueries([{ kind: "sire", parent_id: parentId }]));
 
     await expect(finalizeDogRecord(initialDogState, dogForm())).resolves.toEqual({
       status: "saved",
       message: "Version 1 finalized and queued for attestation.",
     });
-    expect(rpc).toHaveBeenCalledWith("finalize_dog_record", {
+    expect(mocks.adminRpc).toHaveBeenCalledWith("finalize_dog_record", {
       dog_id: childId,
+      acting_user_id: userId,
       record_hash: expect.stringMatching(/^[a-f0-9]{64}$/),
       salt: expect.stringMatching(/^[a-f0-9]{64}$/),
       schema_version: 1,
@@ -398,8 +399,11 @@ describe("finalizeDogRecord", () => {
       ["unexpected", /could not finalize/i],
     ];
     for (const [providerMessage, expected] of cases) {
-      const rpc = vi.fn().mockResolvedValue({ data: null, error: { code: "55000", message: providerMessage } });
-      setAccess("owner", finalizeQueries(), rpc);
+      mocks.adminRpc.mockResolvedValue({
+        data: null,
+        error: { code: "55000", message: providerMessage },
+      });
+      setAccess("owner", finalizeQueries());
       await expect(finalizeDogRecord(initialDogState, dogForm())).resolves.toMatchObject({
         status: "error",
         message: expected,

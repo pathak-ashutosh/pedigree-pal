@@ -1,5 +1,5 @@
 begin;
-select plan(20);
+select plan(24);
 
 select has_column('public', 'dogs', 'record_version', 'dogs carry a record version');
 select has_column('public', 'dogs', 'finalized_at', 'dogs carry a finalize marker');
@@ -109,6 +109,25 @@ select throws_ok(
   $$
     select public.finalize_dog_record(
       '20000000-0000-4000-8000-000000000001',
+      '00000000-0000-4000-8000-000000000002',
+      repeat('1', 64),
+      repeat('2', 64),
+      1::smallint,
+      (select updated_at from public.dogs where id = '20000000-0000-4000-8000-000000000001')
+    )
+  $$,
+  '42501',
+  'permission denied for function finalize_dog_record',
+  'tenants cannot reach the finalize function with their own hashes'
+);
+
+set local role service_role;
+
+select throws_ok(
+  $$
+    select public.finalize_dog_record(
+      '20000000-0000-4000-8000-000000000001',
+      '00000000-0000-4000-8000-000000000002',
       repeat('1', 64),
       repeat('2', 64),
       1::smallint,
@@ -117,19 +136,13 @@ select throws_ok(
   $$,
   '42501',
   'not authorized to finalize this record',
-  'members cannot finalize records'
+  'members cannot act as finalizers'
 );
-
-select set_config(
-  'request.jwt.claims',
-  '{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}',
-  true
-);
-
 select throws_ok(
   $$
     select public.finalize_dog_record(
       '20000000-0000-4000-8000-000000000001',
+      '00000000-0000-4000-8000-000000000001',
       repeat('1', 64),
       repeat('2', 64),
       1::smallint,
@@ -144,6 +157,7 @@ select throws_ok(
   $$
     select public.finalize_dog_record(
       '20000000-0000-4000-8000-000000000001',
+      '00000000-0000-4000-8000-000000000001',
       repeat('1', 64),
       repeat('2', 64),
       1::smallint,
@@ -159,13 +173,14 @@ select lives_ok(
   $$
     select public.finalize_dog_record(
       '20000000-0000-4000-8000-000000000001',
+      '00000000-0000-4000-8000-000000000001',
       repeat('1', 64),
       repeat('2', 64),
       1::smallint,
       (select updated_at from public.dogs where id = '20000000-0000-4000-8000-000000000001')
     )
   $$,
-  'an owner can finalize a reviewed record'
+  'the service role can finalize on behalf of an owner'
 );
 select is(
   (
@@ -196,17 +211,22 @@ select ok(
   ),
   'finalization enqueues a minimal batching request'
 );
-set local role authenticated;
-select set_config(
-  'request.jwt.claims',
-  '{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}',
-  true
+select is(
+  (
+    select actor_id
+    from public.audit_events
+    where entity_type = 'attestations' and action = 'insert'
+  ),
+  '00000000-0000-4000-8000-000000000001'::uuid,
+  'the audit trail records who finalized'
 );
+set local role service_role;
 
 select throws_ok(
   $$
     select public.finalize_dog_record(
       '20000000-0000-4000-8000-000000000001',
+      '00000000-0000-4000-8000-000000000001',
       repeat('5', 64),
       repeat('6', 64),
       1::smallint,
@@ -218,6 +238,7 @@ select throws_ok(
   'a finalized record cannot be finalized twice'
 );
 
+set local role authenticated;
 select set_config(
   'request.jwt.claims',
   '{"sub":"00000000-0000-4000-8000-000000000002","role":"authenticated"}',
@@ -250,15 +271,12 @@ select is(
   'draft edits do not bump the version'
 );
 
-select set_config(
-  'request.jwt.claims',
-  '{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}',
-  true
-);
+set local role service_role;
 select lives_ok(
   $$
     select public.finalize_dog_record(
       '20000000-0000-4000-8000-000000000001',
+      '00000000-0000-4000-8000-000000000001',
       repeat('3', 64),
       repeat('4', 64),
       1::smallint,
@@ -268,6 +286,12 @@ select lives_ok(
   'the corrected record can be finalized as version 2'
 );
 
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}',
+  true
+);
 update public.dogs
 set notes = 'Vet visit booked'
 where id = '20000000-0000-4000-8000-000000000001';
@@ -298,10 +322,46 @@ select ok(
   'a pedigree change bumps the version and clears the finalize marker'
 );
 
+set local role service_role;
+select lives_ok(
+  $$
+    select public.finalize_dog_record(
+      '20000000-0000-4000-8000-000000000001',
+      '00000000-0000-4000-8000-000000000001',
+      repeat('b', 64),
+      repeat('c', 64),
+      1::smallint,
+      (select updated_at from public.dogs where id = '20000000-0000-4000-8000-000000000001'),
+      '20000000-0000-4000-8000-000000000002'
+    )
+  $$,
+  'the record with a pedigree can be finalized as version 3'
+);
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}',
+  true
+);
+update public.dog_parents
+set parent_id = '20000000-0000-4000-8000-000000000002'
+where child_id = '20000000-0000-4000-8000-000000000001' and kind = 'sire';
+select ok(
+  (
+    select record_version = 3 and finalized_at is not null
+    from public.dogs
+    where id = '20000000-0000-4000-8000-000000000001'
+  ),
+  'resaving an unchanged parent does not invalidate a finalization'
+);
+
+set local role service_role;
 select throws_ok(
   $$
     select public.finalize_dog_record(
       '20000000-0000-4000-8000-000000000003',
+      '00000000-0000-4000-8000-000000000001',
       repeat('7', 64),
       repeat('8', 64),
       1::smallint,
