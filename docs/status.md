@@ -17,7 +17,7 @@ Living "where we are / resume here" doc. Full roadmap: [saas-blueprint.md](saas-
 ## Deployed (free-tier demo)
 
 - App: Vercel — `https://pedigree-pal.vercel.app` (Next.js `apps/web`; Vercel Root Directory = `apps/web`)
-- Data/auth/storage: Supabase project `pedigree-pal` (ref `bjlbjvaizmvyrhfejlfg`), core migration applied
+- Data/auth/storage: Supabase project `pedigree-pal` (ref `bjlbjvaizmvyrhfejlfg`), all three migrations applied (2026-07-18; `db diff --linked` clean apart from the hosted `pg_net` extension, which is platform state and must not be dropped)
 - Stripe: test mode
 - Keepalive: `.github/workflows/keepalive.yml` pings `/api/ready` every 2 days (needs repo variable `APP_URL` set)
 
@@ -26,7 +26,7 @@ Living "where we are / resume here" doc. Full roadmap: [saas-blueprint.md](saas-
 1. **Magic-link redirect goes to `localhost`.** Code hardening done (2026-07-18): `requestMagicLink` derives the origin from `x-forwarded-proto`/`x-forwarded-host` via `apps/web/src/lib/server/origin.ts`, falling back to `NEXT_PUBLIC_APP_URL` — a missing env var can no longer produce a localhost link. Remaining manual step: Supabase → Authentication → URL Configuration: **Site URL** = `https://pedigree-pal.vercel.app`, **Redirect URLs** include `https://pedigree-pal.vercel.app/**`. Then merge to `main` and verify sign-in end-to-end.
 2. **Stripe test setup:** products/prices/webhook created; `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_STARTER` / `STRIPE_PRICE_PRO` set in Vercel (2026-07-18). Unverified: that `STRIPE_SECRET_KEY` (set 3 days earlier) belongs to the *same sandbox* as the new webhook secret — if it does not, signature checks and price lookups fail. Confirm with `curl https://api.stripe.com/v1/prices -u <key>:` and then run one test checkout with `4242 4242 4242 4242`.
 3. **Email:** Supabase's built-in sender is rate-limited (a few/hour) — wire custom SMTP (e.g. Resend free tier) for real sign-in volume.
-4. **Apply the Phase 3a migrations to the hosted project.** `20260718160000_attestations.sql` and `20260718180000_dog_finalization.sql` are verified locally only; the Supabase project still has just the core migration. Until they are applied, the deployed dog page will error querying `attestations` — apply before (or with) the next `main` deploy.
+4. **Sign in to the deployed demo and finalize one record.** The Phase 3a migrations are applied to the hosted project and `main` carries the code, but the finalize flow has only ever run against a local Supabase. One end-to-end pass on the deployed app (sign in → create a dog → finalize → confirm the hash appears and a `pending` attestation lands) is the last unverified link. Blocked on item 1's Supabase URL configuration.
 
 ## Phase 2 remaining
 
