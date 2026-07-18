@@ -22,11 +22,16 @@ create table public.attestations (
   -- published hash unlinkable and non-invertible.
   foreign key (dog_id, organization_id)
     references public.dogs(id, organization_id) on delete cascade,
-  check (status <> 'pending' or (confirmed_at is null and revoked_at is null)),
-  check (status <> 'confirmed' or confirmed_at is not null),
-  check (status <> 'revoked' or revoked_at is not null),
-  check (confirmed_at is null or confirmed_at >= created_at),
-  check (revoked_at is null or revoked_at >= created_at)
+  constraint attestations_pending_has_no_outcome
+    check (status <> 'pending' or (confirmed_at is null and revoked_at is null)),
+  constraint attestations_confirmed_has_timestamp
+    check (status <> 'confirmed' or confirmed_at is not null),
+  constraint attestations_revoked_has_timestamp
+    check (status <> 'revoked' or revoked_at is not null),
+  constraint attestations_confirmed_after_created
+    check (confirmed_at is null or confirmed_at >= created_at),
+  constraint attestations_revoked_after_created
+    check (revoked_at is null or revoked_at >= created_at)
 );
 
 create index attestations_organization_dog_idx

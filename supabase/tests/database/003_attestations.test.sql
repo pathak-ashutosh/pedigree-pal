@@ -155,7 +155,7 @@ select throws_ok(
     where record_hash = repeat('a', 64)
   $$,
   '23514',
-  'new row for relation "attestations" violates check constraint "attestations_check1"',
+  'new row for relation "attestations" violates check constraint "attestations_confirmed_has_timestamp"',
   'confirmed attestations must carry a confirmation time'
 );
 
