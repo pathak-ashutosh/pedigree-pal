@@ -24,6 +24,7 @@ Current progress and next steps: [status](docs/status.md). See also [SaaS bluepr
 
 ```text
 apps/web/       production SaaS web/BFF
+contracts/      Foundry project: V2 attestation registry (Phase 3)
 supabase/       migrations, RLS/storage policies, pgTAP tests
 docs/           architecture and operating standards
 ```
@@ -33,6 +34,7 @@ docs/           architecture and operating standards
 - Node.js 20–24 and npm 10+
 - Docker for local Supabase/database tests
 - Supabase CLI 2.109.1 (CI pins it)
+- Foundry (`forge`) for `contracts/` — dependencies are git submodules, so clone with `--recurse-submodules`
 
 ## Run locally
 
