@@ -11,7 +11,7 @@ Living "where we are / resume here" doc. Full roadmap: [saas-blueprint.md](saas-
 | 0 — Stabilize | ✅ complete — CI green, Dependabot tuned, security policy; V1 dApp/contract/Hardhat removed entirely (not just frozen) |
 | 1 — SaaS core | ✅ core complete — app shell, schema/RLS/pgTAP, orgs/RBAC/audit, dog CRUD + pedigree validation |
 | 2 — Monetization & ops | 🔶 active — see open items and remaining below |
-| 3 — Trust layer | 🔶 3a complete on `dev` — hash library, frozen v1 spec, `attestations` table, finalize lifecycle wired end-to-end; next is 3b (testnet) |
+| 3 — Trust layer | 🔶 3a complete on `dev`; 3b started on `trust-3b` — registry contract + Foundry tests; workers/Turnkey/indexer remain |
 | 4 — Launch readiness | ⏳ not started |
 
 ## Deployed (free-tier demo)
@@ -50,6 +50,12 @@ Unblocks when Next ships an ESLint-10-ready `eslint-config-next` and `typescript
 - [record-hash-spec.md](record-hash-spec.md) — the frozen wire format and lifecycle.
 - Verified end-to-end against a local Supabase: pgTAP covers the lifecycle; a live PostgREST call with the app's exact payload confirmed the RPC seam.
 
+## Phase 3b — progress
+
+Branch `trust-3b` (branched off `dev`; PR it after #33 merges): `contracts/` Foundry project with the V2 `AttestationRegistry` (attest/revoke by `ISSUER_ROLE`, `Pausable` break-glass that deliberately keeps revocation available while paused, public mapping for indexer-free verification), 13 tests incl. fuzz, deploy script, CI job. Note: Foundry's builtin solc download is blocked on this machine — build locally with `FOUNDRY_SOLC=$(which solc) forge test` (`brew install solidity`).
+
+Remaining for 3b: Turnkey signer setup, batcher/submitter workers draining `attestation.requested`, indexer with reorg handling, Base Sepolia deploy + disaster-replay test.
+
 ## Suggested next step
 
-Start 3b (Foundry registry contract on Base Sepolia, Turnkey signer, batcher/submitter workers draining `attestation.requested`). In parallel, Phase 2 still needs email via Resend, invitations, and evidence upload.
+Merge #33, then PR `trust-3b` and continue with the batcher/submitter workers. In parallel, Phase 2 still needs email via Resend, invitations, and evidence upload.
