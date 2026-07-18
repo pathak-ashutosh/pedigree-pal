@@ -210,6 +210,12 @@
   font-size: 10px;
 }
 
+.hash {
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+}
+
 .notesField {
   display: block;
   margin-top: 24px;

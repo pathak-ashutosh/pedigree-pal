@@ -39,7 +39,7 @@ Fields, all required and non-optional (absent values are explicit `null`):
 | `schemaVersion` | integer, `1` |
 | `id` | UUID |
 | `organizationId` | UUID |
-| `version` | integer ≥ 1, the record version |
+| `version` | integer ≥ 1, `dogs.record_version` at finalize time |
 | `registeredName` | string, 1–120 |
 | `callName` | string ≤ 80, or null |
 | `breed` | string, 1–120 |
@@ -73,8 +73,17 @@ Record: `id` `1111…1111`, `organizationId` `2222…2222`, `version` 1, `regist
 2276a81aae276512842408f98ce2bc8360eb0ac9509b8d74ed6b39cabd35e247
 ```
 
+## Finalize lifecycle
+
+Hashing runs when an owner or admin **finalizes** a record (`dogs:attest` permission, `registry.write` entitlement). Finalization is a timestamp (`dogs.finalized_at`), deliberately not a `dog_status` value — a finalized dog can still retire or die without touching its attestation.
+
+- `dogs.record_version` starts at 1 and is the `version` this spec hashes. Draft edits never bump it.
+- Finalizing calls `finalize_dog_record()` (security definer), which re-checks under a row lock that the record still matches what the caller reviewed (`updated_at`, current sire/dam), then atomically inserts the `attestations` row, enqueues an `attestation.requested` outbox event for Phase 3b batching, and stamps `finalized_at`.
+- A **material** edit to a finalized record — any hashed field, including parent links — bumps `record_version` and clears `finalized_at`. The prior attestation stays valid for its version; the new draft awaits re-finalization. Non-material edits (`status`, `notes`) change nothing.
+- `record_version` and `finalized_at` are not client-writable; only the function and its triggers set them.
+
 ## Storage
 
-`public.attestations` — one row per attested record version, unique on `(dog_id, record_version)` and on `record_hash`. Rows start `pending`; Phase 3b moves them to `confirmed` once a Merkle root lands on-chain. Writes are service-role only: a tenant can read its own hashes but cannot forge or alter them.
+`public.attestations` — one row per attested record version, unique on `(dog_id, record_version)` and on `record_hash`. Rows start `pending`; Phase 3b moves them to `confirmed` once a Merkle root lands on-chain. Writes go through `finalize_dog_record()` only: a tenant can read its own hashes but cannot forge or alter them.
 
 Deleting a dog cascades to its attestations. That is the GDPR position — dropping the record and its salt leaves any published hash unlinkable and non-invertible.
