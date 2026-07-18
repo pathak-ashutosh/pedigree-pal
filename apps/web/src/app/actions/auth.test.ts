@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   redirect: vi.fn(() => {
     throw new Error("NEXT_REDIRECT");
   }),
+  requestHeaders: { value: new Headers() },
 }));
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
@@ -21,6 +22,7 @@ vi.mock("@/lib/env", () => ({
   }),
 }));
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
+vi.mock("next/headers", () => ({ headers: async () => mocks.requestHeaders.value }));
 
 import { initialAuthState } from "@/lib/auth/state";
 import { requestMagicLink, signOut } from "./auth";
@@ -31,7 +33,10 @@ function authForm(email: string): FormData {
   return formData;
 }
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.requestHeaders.value = new Headers();
+});
 
 describe("auth actions", () => {
   it("rejects invalid email before calling the provider", async () => {
@@ -76,6 +81,24 @@ describe("auth actions", () => {
       },
     });
     expect(mocks.info).toHaveBeenCalledWith({ event: "auth.magic_link.sent" }, "magic link sent");
+  });
+
+  it("prefers the request origin from forwarded headers over the env fallback", async () => {
+    mocks.requestHeaders.value = new Headers({
+      "x-forwarded-proto": "https",
+      "x-forwarded-host": "pedigree-pal.vercel.app",
+    });
+    const signInWithOtp = vi.fn().mockResolvedValue({ error: null });
+    mocks.createClient.mockResolvedValue({ auth: { signInWithOtp } });
+
+    await requestMagicLink(initialAuthState, authForm("person@example.test"));
+    expect(signInWithOtp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({
+          emailRedirectTo: "https://pedigree-pal.vercel.app/auth/callback?next=/dashboard",
+        }),
+      }),
+    );
   });
 
   it("clears the provider session before redirecting", async () => {

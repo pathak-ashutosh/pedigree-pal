@@ -1,8 +1,8 @@
 # Project status
 
-Last updated: 2026-07-17.
+Last updated: 2026-07-18.
 
-Living "where we are / resume here" doc. Full roadmap: [saas-blueprint.md](saas-blueprint.md). Phase 3 design: [trust-layer-plan.md](trust-layer-plan.md).
+Living "where we are / resume here" doc. Full roadmap: [saas-blueprint.md](saas-blueprint.md). Phase 3 design: [trust-layer-plan.md](trust-layer-plan.md), frozen hash format: [record-hash-spec.md](record-hash-spec.md).
 
 ## Phase progress
 
@@ -11,7 +11,7 @@ Living "where we are / resume here" doc. Full roadmap: [saas-blueprint.md](saas-
 | 0 — Stabilize | ✅ complete — CI green, Dependabot tuned, security policy; V1 dApp/contract/Hardhat removed entirely (not just frozen) |
 | 1 — SaaS core | ✅ core complete — app shell, schema/RLS/pgTAP, orgs/RBAC/audit, dog CRUD + pedigree validation |
 | 2 — Monetization & ops | 🔶 active — see open items and remaining below |
-| 3 — Trust layer | 📝 planned only, nothing built — start with 3a (off-chain hashing) |
+| 3 — Trust layer | 🔶 3a mostly built — canonical-hash library, frozen v1 spec, `attestations` table; not yet wired to a finalize action |
 | 4 — Launch readiness | ⏳ not started |
 
 ## Deployed (free-tier demo)
@@ -23,9 +23,10 @@ Living "where we are / resume here" doc. Full roadmap: [saas-blueprint.md](saas-
 
 ## Open items — resume here
 
-1. **Magic-link redirect goes to `localhost`.** Root cause confirmed: the deployed app reads `NEXT_PUBLIC_APP_URL` as undefined and falls back to the `http://localhost:3000` default. Fix: set `NEXT_PUBLIC_APP_URL=https://pedigree-pal.vercel.app` in Vercel for the **Production** scope and **redeploy** (it is build-time inlined). Then set Supabase → Authentication → URL Configuration: **Site URL** = the Vercel URL and **Redirect URLs** include `https://pedigree-pal.vercel.app/**`. Optional hardening: derive the origin from request headers in `apps/web/src/app/actions/auth.ts` so a missing env var can never produce a localhost link.
-2. **Stripe test setup:** create test products/prices, add a webhook to `/api/v1/webhooks/stripe`, set `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_*` in Vercel.
+1. **Magic-link redirect goes to `localhost`.** Code hardening done (2026-07-18): `requestMagicLink` derives the origin from `x-forwarded-proto`/`x-forwarded-host` via `apps/web/src/lib/server/origin.ts`, falling back to `NEXT_PUBLIC_APP_URL` — a missing env var can no longer produce a localhost link. Remaining manual step: Supabase → Authentication → URL Configuration: **Site URL** = `https://pedigree-pal.vercel.app`, **Redirect URLs** include `https://pedigree-pal.vercel.app/**`. Then merge to `main` and verify sign-in end-to-end.
+2. **Stripe test setup:** products/prices/webhook created; `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_STARTER` / `STRIPE_PRICE_PRO` set in Vercel (2026-07-18). Unverified: that `STRIPE_SECRET_KEY` (set 3 days earlier) belongs to the *same sandbox* as the new webhook secret — if it does not, signature checks and price lookups fail. Confirm with `curl https://api.stripe.com/v1/prices -u <key>:` and then run one test checkout with `4242 4242 4242 4242`.
 3. **Email:** Supabase's built-in sender is rate-limited (a few/hour) — wire custom SMTP (e.g. Resend free tier) for real sign-in volume.
+4. **Apply the `attestations` migration to the hosted project.** `20260718160000_attestations.sql` is verified locally only; the Supabase project still has just the core migration.
 
 ## Phase 2 remaining
 
@@ -40,6 +41,14 @@ Custom SMTP/email, onboarding polish, admin/support console, product analytics, 
 
 Unblocks when Next ships an ESLint-10-ready `eslint-config-next` and `typescript-eslint` adds TS 7 support.
 
+## Phase 3a — what is built
+
+- `apps/web/src/domain/attestation/` — RFC 8785 canonicalization, the frozen v1 record projection, and `keccak256(domainTag ‖ schemaVersion ‖ salt ‖ canonicalRecord)`. 48 tests including a golden vector that fails CI if the format drifts.
+- `supabase/migrations/20260718160000_attestations.sql` — `attestations` table, RLS, service-role-only writes, `salt` withheld from the member column grant and from the audit trail.
+- [record-hash-spec.md](record-hash-spec.md) — the frozen wire format.
+
+**Open design question before finishing 3a:** the plan hashes a record when it is "finalized/verified", but no such state exists — `dog_status` is active/retired/deceased/archived. Wiring hashing to a finalize action needs that lifecycle state defined first (new status value vs. a separate `finalized_at`, who can finalize, whether edits after finalize bump `record_version` automatically).
+
 ## Suggested next step
 
-Finish the auth redirect + Stripe webhook config so the deployed demo signs in end-to-end. Then either continue Phase 2 (email via Resend, invitations, evidence upload) or start trust-layer **3a** in parallel — it is self-contained (canonical-hash library + `attestations` migration, no chain) and de-risks Phase 3.
+Decide the finalize lifecycle above, then wire hash-on-finalize to close out 3a. In parallel, Phase 2 still needs email via Resend, invitations, and evidence upload.

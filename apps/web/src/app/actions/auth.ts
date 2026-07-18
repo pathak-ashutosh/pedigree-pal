@@ -2,8 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { getPublicEnv } from "@/lib/env";
 import { logger } from "@/lib/server/logger";
+import { getRequestOrigin } from "@/lib/server/origin";
 import { createClient } from "@/lib/supabase/server";
 import type { AuthState } from "@/lib/auth/state";
 
@@ -23,11 +23,11 @@ export async function requestMagicLink(
   }
 
   const supabase = await createClient();
-  const env = getPublicEnv();
+  const origin = await getRequestOrigin();
   const { error } = await supabase.auth.signInWithOtp({
     email: result.data.email,
     options: {
-      emailRedirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/dashboard`,
+      emailRedirectTo: `${origin}/auth/callback?next=/dashboard`,
       shouldCreateUser: true,
     },
   });

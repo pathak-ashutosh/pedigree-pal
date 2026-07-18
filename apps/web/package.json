@@ -24,6 +24,7 @@
     "@fontsource-variable/archivo": "^5.2.8",
     "@fontsource-variable/fraunces": "^5.2.9",
     "@fontsource/ibm-plex-mono": "^5.2.7",
+    "@noble/hashes": "^2.2.0",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.7",
     "next": "16.2.10",
