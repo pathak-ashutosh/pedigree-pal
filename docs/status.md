@@ -52,7 +52,7 @@ Unblocks when Next ships an ESLint-10-ready `eslint-config-next` and `typescript
 
 ## Phase 3b — progress
 
-Branch `trust-3b` (branched off `dev`; PR it after #33 merges): `contracts/` Foundry project with the V2 `AttestationRegistry` (attest/revoke by `ISSUER_ROLE`, `Pausable` break-glass that deliberately keeps revocation available while paused, public mapping for indexer-free verification), 13 tests incl. fuzz, deploy script, CI job. Note: Foundry's builtin solc download is blocked on this machine — build locally with `FOUNDRY_SOLC=$(which solc) forge test` (`brew install solidity`).
+Branch `trust-3b`, [PR #34](https://github.com/pathak-ashutosh/pedigree-pal/pull/34): `contracts/` Foundry project with the V2 `AttestationRegistry` — `attest` under `ISSUER_ROLE`, `revoke` under a separate `REVOKER_ROLE` (never grant both to one key; see [trust-layer-plan.md](trust-layer-plan.md)), `Pausable` break-glass, public mapping for indexer-free verification. 16 tests incl. fuzz, deploy script, CI job. Note: Foundry's builtin solc download is blocked on this machine — build locally with `FOUNDRY_SOLC=$(which solc) forge test` (`brew install solidity`).
 
 Remaining for 3b: Turnkey signer setup, batcher/submitter workers draining `attestation.requested`, indexer with reorg handling, Base Sepolia deploy + disaster-replay test.
 

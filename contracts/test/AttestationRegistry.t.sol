@@ -11,6 +11,7 @@ contract AttestationRegistryTest is Test {
 
     address internal admin = makeAddr("admin");
     address internal issuer = makeAddr("issuer");
+    address internal revoker = makeAddr("revoker");
     address internal outsider = makeAddr("outsider");
 
     bytes32 internal constant ROOT = keccak256("merkle-root-1");
@@ -21,8 +22,11 @@ contract AttestationRegistryTest is Test {
     function setUp() public {
         registry = new AttestationRegistry(admin);
         bytes32 issuerRole = registry.ISSUER_ROLE();
-        vm.prank(admin);
+        bytes32 revokerRole = registry.REVOKER_ROLE();
+        vm.startPrank(admin);
         registry.grantRole(issuerRole, issuer);
+        registry.grantRole(revokerRole, revoker);
+        vm.stopPrank();
     }
 
     function unauthorized(address account, bytes32 role) internal pure returns (bytes memory) {
@@ -67,12 +71,13 @@ contract AttestationRegistryTest is Test {
     }
 
     function test_RevokeMarksRootAndEmits() public {
-        vm.startPrank(issuer);
+        vm.prank(issuer);
         registry.attest(ROOT);
+
         vm.expectEmit(true, true, false, true);
-        emit Revoked(ROOT, issuer, uint40(block.timestamp));
+        emit Revoked(ROOT, revoker, uint40(block.timestamp));
+        vm.prank(revoker);
         registry.revoke(ROOT);
-        vm.stopPrank();
 
         (, bool revoked) = registry.attestations(ROOT);
         assertTrue(revoked);
@@ -80,32 +85,50 @@ contract AttestationRegistryTest is Test {
     }
 
     function test_RevokeRejectsUnknownAndDoubleRevocation() public {
-        vm.startPrank(issuer);
         vm.expectRevert(abi.encodeWithSelector(AttestationRegistry.NotAttested.selector, ROOT));
+        vm.prank(revoker);
         registry.revoke(ROOT);
 
+        vm.prank(issuer);
         registry.attest(ROOT);
+
+        vm.startPrank(revoker);
         registry.revoke(ROOT);
         vm.expectRevert(abi.encodeWithSelector(AttestationRegistry.AlreadyRevoked.selector, ROOT));
         registry.revoke(ROOT);
         vm.stopPrank();
     }
 
-    function test_RevokeRejectsNonIssuer() public {
+    function test_RevokeRejectsNonRevoker() public {
         vm.prank(issuer);
         registry.attest(ROOT);
-        vm.expectRevert(unauthorized(outsider, registry.ISSUER_ROLE()));
+
+        vm.expectRevert(unauthorized(outsider, registry.REVOKER_ROLE()));
         vm.prank(outsider);
         registry.revoke(ROOT);
     }
 
-    function test_RevokedRootCannotBeReattested() public {
+    /// A leaked issuer key must not be able to revoke: revocation is permanent,
+    /// so otherwise the compromised key could destroy every legitimate root.
+    function test_IssuerCannotRevoke() public {
         vm.startPrank(issuer);
         registry.attest(ROOT);
+        vm.expectRevert(unauthorized(issuer, registry.REVOKER_ROLE()));
         registry.revoke(ROOT);
-        vm.expectRevert(abi.encodeWithSelector(AttestationRegistry.AlreadyAttested.selector, ROOT));
-        registry.attest(ROOT);
         vm.stopPrank();
+
+        assertTrue(registry.isAttested(ROOT));
+    }
+
+    function test_RevokedRootCannotBeReattested() public {
+        vm.prank(issuer);
+        registry.attest(ROOT);
+        vm.prank(revoker);
+        registry.revoke(ROOT);
+
+        vm.expectRevert(abi.encodeWithSelector(AttestationRegistry.AlreadyAttested.selector, ROOT));
+        vm.prank(issuer);
+        registry.attest(ROOT);
     }
 
     function test_PauseBlocksAttestButNotRevoke() public {
@@ -119,8 +142,14 @@ contract AttestationRegistryTest is Test {
         vm.prank(issuer);
         registry.attest(keccak256("merkle-root-2"));
 
-        // Break-glass: revocation must stay available during an incident.
+        // A compromised issuer key is contained by pause alone: it can neither
+        // attest nor revoke while the operator cleans up.
+        vm.expectRevert(unauthorized(issuer, registry.REVOKER_ROLE()));
         vm.prank(issuer);
+        registry.revoke(ROOT);
+
+        // The operator can still clear forged roots during containment.
+        vm.prank(revoker);
         registry.revoke(ROOT);
         assertFalse(registry.isAttested(ROOT));
 
@@ -134,6 +163,18 @@ contract AttestationRegistryTest is Test {
         vm.expectRevert(unauthorized(issuer, registry.DEFAULT_ADMIN_ROLE()));
         vm.prank(issuer);
         registry.pause();
+    }
+
+    function test_ConstructorRejectsZeroAdmin() public {
+        vm.expectRevert(AttestationRegistry.ZeroAdmin.selector);
+        new AttestationRegistry(address(0));
+    }
+
+    function test_DeployedRegistryGrantsNoRolesByDefault() public view {
+        assertTrue(registry.hasRole(registry.DEFAULT_ADMIN_ROLE(), admin));
+        assertFalse(registry.hasRole(registry.ISSUER_ROLE(), admin));
+        assertFalse(registry.hasRole(registry.REVOKER_ROLE(), admin));
+        assertFalse(registry.hasRole(registry.REVOKER_ROLE(), issuer));
     }
 
     function test_IssuerRotation() public {

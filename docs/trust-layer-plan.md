@@ -34,9 +34,11 @@ Verification uses only public data. No private data is ever written on-chain.
 Minimal attestation registry, small audit surface:
 
 - `attest(bytes32 root)` — `ISSUER_ROLE` only; emits `Attested(root, issuer, timestamp)`
-- `revoke(bytes32 root)` — emits `Revoked`
+- `revoke(bytes32 root)` — `REVOKER_ROLE` only; emits `Revoked`
 - `mapping(bytes32 => {uint40 attestedAt; bool revoked})` so anyone verifies without an indexer
 - OpenZeppelin `AccessControl` + `Pausable` (chain-pause runbook)
+
+`REVOKER_ROLE` is separate from `ISSUER_ROLE` (review finding, 2026-07-18). Revocation is permanent — a revoked root can never be re-attested — so if the automated submitter's key also held it, a leaked key could destroy every legitimate root during the incident `pause` is meant to contain. Pause blocks `attest` but not `revoke`, so the operator can still clear forged roots mid-incident; that is only safe because the compromised issuer key cannot revoke. Never grant both roles to one key.
 
 Gate before mainnet: Foundry tests, Slither, independent audit.
 

@@ -11,7 +11,16 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 ///         and versioned: breaking changes ship as a new registry, and roots
 ///         attested here stay valid forever.
 contract AttestationRegistry is AccessControl, Pausable {
+    /// @notice Held by the automated submitter's signing key. Attestation is
+    ///         all it can do — see REVOKER_ROLE.
     bytes32 public constant ISSUER_ROLE = keccak256("ISSUER_ROLE");
+
+    /// @notice Deliberately separate from ISSUER_ROLE. Revocation is permanent
+    ///         (a revoked root can never be re-attested), so a leaked issuer key
+    ///         must not be able to destroy the registry during the very incident
+    ///         `pause` exists to contain. Held by an operator key, never by the
+    ///         automated submitter.
+    bytes32 public constant REVOKER_ROLE = keccak256("REVOKER_ROLE");
 
     struct Attestation {
         uint40 attestedAt;
@@ -26,11 +35,17 @@ contract AttestationRegistry is AccessControl, Pausable {
     event Revoked(bytes32 indexed root, address indexed issuer, uint40 timestamp);
 
     error ZeroRoot();
+    error ZeroAdmin();
     error AlreadyAttested(bytes32 root);
     error NotAttested(bytes32 root);
     error AlreadyRevoked(bytes32 root);
 
+    /// @param admin Receives DEFAULT_ADMIN_ROLE and grants the issuer and
+    ///        revoker roles afterwards. Rejected if zero: the registry is
+    ///        immutable, so a misconfigured deployment could never grant a
+    ///        single role and would have to be redeployed.
     constructor(address admin) {
+        if (admin == address(0)) revert ZeroAdmin();
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
@@ -42,10 +57,11 @@ contract AttestationRegistry is AccessControl, Pausable {
         emit Attested(root, msg.sender, timestamp);
     }
 
-    /// @notice Revocation works while paused on purpose: pause is the
-    ///         break-glass response to a leaked issuer key, and revoking
-    ///         forged roots is exactly what the incident runbook does next.
-    function revoke(bytes32 root) external onlyRole(ISSUER_ROLE) {
+    /// @notice Permanent: a revoked root can never be attested again.
+    ///         Stays callable while paused so an operator can clear forged
+    ///         roots during containment — safe only because the compromised
+    ///         issuer key does not hold REVOKER_ROLE.
+    function revoke(bytes32 root) external onlyRole(REVOKER_ROLE) {
         Attestation storage attestation = attestations[root];
         if (attestation.attestedAt == 0) revert NotAttested(root);
         if (attestation.revoked) revert AlreadyRevoked(root);
