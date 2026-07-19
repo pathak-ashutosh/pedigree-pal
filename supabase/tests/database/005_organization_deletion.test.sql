@@ -1,5 +1,5 @@
 begin;
-select plan(16);
+select plan(20);
 
 insert into auth.users (id, email) values
   ('00000000-0000-4000-8000-000000000001', 'owner-a@example.test'),
@@ -77,6 +77,38 @@ insert into public.attestations (
   1,
   repeat('a', 64),
   repeat('b', 64)
+);
+
+-- Kennel B keeps a real pedigree. `dog_parents.parent_id` references dogs with
+-- ON DELETE RESTRICT, so a teardown only succeeds because every dog in the
+-- organization goes in one statement and the child's own cascade clears the
+-- link first. Worth pinning: a change to either cascade would strand tenants.
+insert into public.dogs (
+  id, organization_id, registered_name, breed, sex, birth_date, created_by
+) values (
+  '20000000-0000-4000-8000-000000000003',
+  '10000000-0000-4000-8000-000000000002',
+  'Sire B',
+  'Retriever',
+  'male',
+  '2018-01-01',
+  '00000000-0000-4000-8000-000000000003'
+);
+insert into public.dog_parents (
+  organization_id, child_id, parent_id, kind, created_by
+) values (
+  '10000000-0000-4000-8000-000000000002',
+  '20000000-0000-4000-8000-000000000002',
+  '20000000-0000-4000-8000-000000000003',
+  'sire',
+  '00000000-0000-4000-8000-000000000003'
+);
+
+select throws_ok(
+  $$delete from public.dogs where id = '20000000-0000-4000-8000-000000000003'$$,
+  '23503',
+  'update or delete on table "dogs" violates foreign key constraint "dog_parents_parent_id_organization_id_fkey" on table "dog_parents"',
+  'a parent dog is still protected while its pedigree link survives'
 );
 
 -- The guards must still hold while the organization is alive.
@@ -173,20 +205,42 @@ select is(
 );
 select is(
   (select count(*) from public.dogs where organization_id = '10000000-0000-4000-8000-000000000002'),
-  1::bigint,
+  2::bigint,
   'another tenant keeps its dogs'
 );
 
--- An owner deleting through the client role, which is how the app would do it.
+-- A tenant must not be able to erase itself while its Stripe subscription keeps
+-- billing; deletion is service-role only until a workflow cancels Stripe first.
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
   '{"sub":"00000000-0000-4000-8000-000000000003","role":"authenticated"}',
   true
 );
+select throws_ok(
+  $$delete from public.organizations where id = '10000000-0000-4000-8000-000000000002'$$,
+  '42501',
+  'permission denied for table organizations',
+  'an owner cannot delete their organization directly'
+);
+
+-- The service role can, and a tenant holding a real pedigree tears down cleanly.
+set local role service_role;
 select lives_ok(
   $$delete from public.organizations where id = '10000000-0000-4000-8000-000000000002'$$,
-  'an owner can delete their own organization through RLS'
+  'a server workflow can delete an organization that has pedigree links'
+);
+select is(
+  (select count(*) from public.dog_parents
+   where organization_id = '10000000-0000-4000-8000-000000000002'),
+  0::bigint,
+  'pedigree links are removed with the organization'
+);
+select is(
+  (select count(*) from public.dogs
+   where organization_id = '10000000-0000-4000-8000-000000000002'),
+  0::bigint,
+  'both the parent and child dog are removed despite the RESTRICT link'
 );
 
 select * from finish();

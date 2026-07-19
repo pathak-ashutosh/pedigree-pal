@@ -188,3 +188,13 @@ begin
   return coalesce(new, old);
 end;
 $$;
+
+-- Deletion now works, which makes the client-role path dangerous: the cascade
+-- takes organization_billing with it, including stripe_subscription_id, so a
+-- tenant could erase itself while its Stripe subscription kept billing and
+-- later webhooks failed to find the row. Nothing cancels the subscription
+-- today. Until a workflow exists that cancels in Stripe first, deletion is
+-- service-role only; the database is ready for it, the tenant cannot trigger
+-- it. Tracked as "data export/deletion" in docs/status.md.
+drop policy if exists organizations_delete_owner on public.organizations;
+revoke delete on public.organizations from authenticated;
