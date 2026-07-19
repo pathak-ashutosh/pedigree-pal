@@ -16,7 +16,10 @@ major_version = 17
 enabled = false
 
 [local_smtp]
-enabled = false
+# Local-only mail catcher; magic-link sign-in is unusable without it because
+# nothing else delivers the email. Web UI at http://127.0.0.1:54324.
+enabled = true
+port = 54324
 
 [storage]
 enabled = true
@@ -25,7 +28,13 @@ file_size_limit = "25MiB"
 [auth]
 enabled = true
 site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://127.0.0.1:3000/auth/callback"]
+# The app derives the callback origin from request headers, so allow both
+# loopback spellings; a redirect that is not listed silently falls back to
+# site_url and the sign-in never completes.
+additional_redirect_urls = [
+  "http://localhost:3000/**",
+  "http://127.0.0.1:3000/**",
+]
 jwt_expiry = 3600
 enable_signup = true
 

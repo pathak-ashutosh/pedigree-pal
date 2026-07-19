@@ -24,6 +24,7 @@ Current progress and next steps: [status](docs/status.md). See also [SaaS bluepr
 
 ```text
 apps/web/       production SaaS web/BFF
+contracts/      Foundry project: V2 attestation registry (Phase 3)
 supabase/       migrations, RLS/storage policies, pgTAP tests
 docs/           architecture and operating standards
 ```
@@ -33,6 +34,7 @@ docs/           architecture and operating standards
 - Node.js 20–24 and npm 10+
 - Docker for local Supabase/database tests
 - Supabase CLI 2.109.1 (CI pins it)
+- Foundry (`forge`) for `contracts/` — dependencies are git submodules, so clone with `--recurse-submodules`
 
 ## Run locally
 
@@ -44,20 +46,24 @@ supabase start
 
 `supabase start` boots the local stack (Postgres, auth, storage, mail catcher) and applies every migration in `supabase/migrations`. It prints the values `.env.local` needs — `supabase status` reprints them later:
 
-| `.env.local` key | Value |
+| `.env.local` key | `supabase status` field |
 | --- | --- |
-| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` (as shipped in `.env.example`) |
-| `NEXT_PUBLIC_SUPABASE_URL` | `API URL` — `http://127.0.0.1:54321` |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `anon key` |
-| `SUPABASE_SERVICE_ROLE_KEY` | `service_role key` |
+| `NEXT_PUBLIC_APP_URL` | not from Supabase — use `http://localhost:3000` |
+| `NEXT_PUBLIC_SUPABASE_URL` | `API URL` (`http://127.0.0.1:54321`) |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `PUBLISHABLE_KEY` (or legacy `ANON_KEY`) |
+| `SUPABASE_SERVICE_ROLE_KEY` | `SECRET_KEY` (or legacy `SERVICE_ROLE_KEY`) |
 
-The `STRIPE_*` placeholders in `.env.example` pass validation as-is; only billing flows need real Stripe test-mode values.
+Leave every value unquoted and on one line. A trailing `# comment` after `KEY=` parses as an empty value, and the app fails fast with a `ZodError` naming the offending variable.
+
+`.env.local` takes precedence over `.env`, so a half-filled `.env.local` shadows working values in `.env`. The `STRIPE_*` keys are only needed for billing flows; omit them locally and any values in `.env` apply.
 
 ```bash
 npm --prefix apps/web run dev
 ```
 
-Open `http://localhost:3000` and sign in with any email address — local magic-link emails are caught by Mailpit at `http://127.0.0.1:54324`, no SMTP needed. Onboarding creates an organization with trial entitlements, after which the registry is fully usable. Probes are `GET /api/health` and `GET /api/ready`.
+Open `http://localhost:3000` and sign in with any email address — nothing is actually delivered, so read the magic link in the Mailpit web UI at `http://127.0.0.1:54324`. Onboarding creates an organization with trial entitlements, after which the registry is fully usable. Probes are `GET /api/health` and `GET /api/ready`.
+
+Restart `next dev` after editing env files, and re-run `supabase start` after editing `supabase/config.toml`.
 
 Useful afterwards: `supabase db reset` re-applies migrations from scratch; `supabase stop` shuts the stack down.
 

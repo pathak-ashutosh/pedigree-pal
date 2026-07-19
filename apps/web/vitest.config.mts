@@ -18,6 +18,7 @@ export default defineConfig({
         "src/app/auth/callback/route.ts",
         "src/app/onboarding/organization-form.tsx",
         "src/app/dashboard/**/*-form.tsx",
+        "src/app/dashboard/workspace-nav.tsx",
         "src/domain/**/*.ts",
         "src/lib/env.ts",
         "src/lib/auth/redirect.ts",
