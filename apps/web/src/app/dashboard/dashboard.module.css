@@ -57,10 +57,36 @@
   font-size: 13px;
 }
 
-.sidebar nav a:first-child {
+.sidebar nav a:hover,
+.sidebar nav a:focus-visible {
+  color: var(--white);
+  background: #ffffff1a;
+}
+
+.sidebar nav a[aria-current="page"] {
   color: var(--ink);
   background: var(--tag-yellow);
   font-weight: 700;
+}
+
+/* Destinations that exist in the map but cannot be opened yet — must not read
+   as a link that is simply broken. */
+.sidebar nav span[aria-disabled="true"] {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  color: #7a8b96;
+  cursor: not-allowed;
+}
+
+.sidebar nav span[aria-disabled="true"] small {
+  border: 1px solid #55636d;
+  padding: 1px 5px;
+  color: #8fa0ab;
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .sidebarFooter {
