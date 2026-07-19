@@ -2,6 +2,7 @@ import Link from "next/link";
 import { signOut } from "@/app/actions/auth";
 import { can } from "@/domain/rbac";
 import type { OrganizationSummary } from "@/lib/organizations/dal";
+import { WorkspaceNav, type WorkspaceNavItem } from "./workspace-nav";
 import styles from "./dashboard.module.css";
 
 export function WorkspaceShell({
@@ -14,6 +15,21 @@ export function WorkspaceShell({
   children: React.ReactNode;
 }) {
   const basePath = `/dashboard/${organization.slug}`;
+  const mayManage = can(organization.role, "organization:manage");
+  const navItems: WorkspaceNavItem[] = [
+    { label: "Overview", href: basePath, exact: true },
+    { label: "Dogs", href: `${basePath}/dogs` },
+    { label: "Pedigrees", note: "Soon" },
+    { label: "Evidence", note: "Soon" },
+    { label: "Team", note: "Soon" },
+    can(organization.role, "audit:read")
+      ? { label: "Audit log", href: `${basePath}/audit` }
+      : { label: "Audit log", note: "Admins" },
+    mayManage
+      ? { label: "Billing", href: `${basePath}/billing` }
+      : { label: "Billing", note: "Admins" },
+    ...(mayManage ? [{ label: "Developer", href: `${basePath}/developer` }] : []),
+  ];
 
   return (
     <div className={styles.shell}>
@@ -24,26 +40,7 @@ export function WorkspaceShell({
           <strong>{organization.name}</strong>
           <small>{organization.role}</small>
         </div>
-        <nav aria-label="Workspace">
-          <Link href={basePath}>Overview</Link>
-          <Link href={`${basePath}/dogs`}>Dogs</Link>
-          <span>Pedigrees</span>
-          <span>Evidence</span>
-          <span>Team</span>
-          {can(organization.role, "audit:read") ? (
-            <Link href={`${basePath}/audit`}>Audit log</Link>
-          ) : (
-            <span>Audit log</span>
-          )}
-          {can(organization.role, "organization:manage") ? (
-            <>
-              <Link href={`${basePath}/billing`}>Billing</Link>
-              <Link href={`${basePath}/developer`}>Developer</Link>
-            </>
-          ) : (
-            <span>Billing</span>
-          )}
-        </nav>
+        <WorkspaceNav items={navItems} />
         <div className={styles.sidebarFooter}>
           <span title={userLabel}>{userLabel}</span>
           <form action={signOut}>

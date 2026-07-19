@@ -206,6 +206,7 @@ select ok(
     select 1
     from public.outbox_events
     where topic = 'attestation.requested'
+      and payload ->> 'dog_id' = '20000000-0000-4000-8000-000000000001'
       and payload ?& array['attestation_id', 'dog_id', 'record_version']
       and not payload ?| array['registered_name', 'notes', 'microchip_hash', 'salt', 'record_hash']
   ),
@@ -213,9 +214,12 @@ select ok(
 );
 select is(
   (
-    select actor_id
-    from public.audit_events
-    where entity_type = 'attestations' and action = 'insert'
+    select event.actor_id
+    from public.audit_events event
+    join public.attestations attestation on attestation.id::text = event.entity_id
+    where event.entity_type = 'attestations'
+      and event.action = 'insert'
+      and attestation.dog_id = '20000000-0000-4000-8000-000000000001'
   ),
   '00000000-0000-4000-8000-000000000001'::uuid,
   'the audit trail records who finalized'
