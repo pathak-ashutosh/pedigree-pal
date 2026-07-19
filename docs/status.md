@@ -32,6 +32,8 @@ Living "where we are / resume here" doc. Full roadmap: [saas-blueprint.md](saas-
 
 Custom SMTP/email, onboarding polish, admin/support console, product analytics, evidence upload/review, invitations, data export/deletion, outbound worker delivery.
 
+Tenant deletion works at the database level as of `20260719030000_allow_organization_deletion.sql` — deleting an organization cascades away its dogs, attestations (salts included), audit trail, and outbox events, which is what the erasure policy in [trust-layer-plan.md](trust-layer-plan.md) assumes. There is still no UI or export step in front of it.
+
 ## Held dependency upgrades
 
 `apps/web` intentionally holds these majors (Dependabot ignores set); revisit when upstream catches up:
