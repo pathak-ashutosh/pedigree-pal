@@ -19,7 +19,7 @@ export function createHealthHandler({
     const body = {
       status: "ok",
       service: "pedigree-pal-web",
-      release: process.env.RELEASE_SHA || process.env.VERCEL_GIT_COMMIT_SHA || "development",
+      release: process.env.VERCEL_GIT_COMMIT_SHA || process.env.RELEASE_SHA || "development",
     } as const;
 
     activeLogger.info(
