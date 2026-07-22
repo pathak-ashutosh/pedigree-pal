@@ -1,8 +1,12 @@
-import { vi } from "vitest";
+import { afterEach, vi } from "vitest";
 import { createHealthHandler } from "./route";
+
+afterEach(() => vi.unstubAllEnvs());
 
 describe("health endpoint", () => {
   it("returns identity, correlation, and no-store headers", async () => {
+    vi.stubEnv("RELEASE_SHA", "");
+    vi.stubEnv("VERCEL_GIT_COMMIT_SHA", "deployed-commit");
     const info = vi.fn();
     const times = [100, 107];
     const handler = createHealthHandler({
@@ -19,11 +23,21 @@ describe("health endpoint", () => {
     await expect(response.json()).resolves.toEqual({
       status: "ok",
       service: "pedigree-pal-web",
-      release: "development",
+      release: "deployed-commit",
     });
     expect(info).toHaveBeenCalledWith(
       expect.objectContaining({ event: "health.checked", durationMs: 7, statusCode: 200 }),
       "health check",
     );
+  });
+
+  it("prefers an explicitly configured release", async () => {
+    vi.stubEnv("RELEASE_SHA", "configured-release");
+    vi.stubEnv("VERCEL_GIT_COMMIT_SHA", "deployed-commit");
+    const handler = createHealthHandler({ activeLogger: { info: vi.fn() } });
+
+    await expect(
+      (await handler(new Request("https://example.test/api/health"))).json(),
+    ).resolves.toMatchObject({ release: "configured-release" });
   });
 });
