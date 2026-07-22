@@ -28,9 +28,8 @@ file_size_limit = "25MiB"
 [auth]
 enabled = true
 site_url = "http://localhost:3000"
-# The app derives the callback origin from request headers, so allow both
-# loopback spellings; a redirect that is not listed silently falls back to
-# site_url and the sign-in never completes.
+# Local-only callback allowlist. Production must use only the exact canonical
+# HTTPS application callback and must not copy these wildcard entries.
 additional_redirect_urls = [
   "http://localhost:3000/**",
   "http://127.0.0.1:3000/**",

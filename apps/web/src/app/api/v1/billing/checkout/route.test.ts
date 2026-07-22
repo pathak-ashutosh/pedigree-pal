@@ -25,7 +25,11 @@ function request(
 ): Request {
   return new Request("https://app.example.test/api/v1/billing/checkout", {
     method: "POST",
-    headers: { "content-type": "application/json", "idempotency-key": key },
+    headers: {
+      "content-type": "application/json",
+      "idempotency-key": key,
+      origin: "https://app.example.test",
+    },
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
 }
@@ -72,6 +76,25 @@ function setup({
 }
 
 describe("billing checkout API", () => {
+  it("rejects cross-site and non-JSON requests", async () => {
+    const { handler, access } = setup();
+    const crossSite = request();
+    crossSite.headers.set("origin", "https://attacker.example.test");
+    expect((await handler(crossSite)).status).toBe(403);
+
+    const wrongType = request();
+    wrongType.headers.set("content-type", "text/plain");
+    expect((await handler(wrongType)).status).toBe(415);
+    expect(access).not.toHaveBeenCalled();
+  });
+
+  it("rejects oversized bodies before authentication", async () => {
+    const { handler, access } = setup();
+    const response = await handler(request(JSON.stringify({ padding: "x".repeat(9 * 1024) })));
+    expect(response.status).toBe(413);
+    expect(access).not.toHaveBeenCalled();
+  });
+
   it("requires idempotency before parsing", async () => {
     const { handler, access } = setup();
     const response = await handler(request({}, "short"));

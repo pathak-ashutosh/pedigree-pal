@@ -1,6 +1,12 @@
 import { beforeEach, vi } from "vitest";
 
 type CookieOptions = {
+  cookieOptions: {
+    httpOnly: boolean;
+    sameSite: string;
+    secure: boolean;
+    path: string;
+  };
   cookies: {
     getAll: () => unknown;
     setAll: (values: Array<{ name: string; value: string; options: Record<string, unknown> }>) => void;
@@ -41,6 +47,12 @@ describe("server Supabase client", () => {
     mocks.getAll.mockReturnValue([{ name: "session", value: "old" }]);
     await expect(createClient()).resolves.toEqual({ kind: "server" });
 
+    expect(options.cookieOptions).toEqual({
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false,
+      path: "/",
+    });
     expect(options.cookies.getAll()).toEqual([{ name: "session", value: "old" }]);
     options.cookies.setAll([{ name: "session", value: "new", options: { httpOnly: true } }]);
     expect(mocks.set).toHaveBeenCalledWith("session", "new", { httpOnly: true });

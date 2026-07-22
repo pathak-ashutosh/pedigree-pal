@@ -4,7 +4,12 @@ import { parseStripeBillingEvent } from "@/lib/billing/events";
 import { getStripe } from "@/lib/billing/stripe";
 import { hashRequestPayload } from "@/lib/server/idempotency";
 import { logger } from "@/lib/server/logger";
-import { getRequestId } from "@/lib/server/request";
+import {
+  getRequestId,
+  hasJsonContentType,
+  readLimitedRequestText,
+  RequestBodyTooLargeError,
+} from "@/lib/server/request";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const defaultDependencies = {
@@ -46,8 +51,18 @@ export function createStripeWebhookHandler(
     if (!signature) {
       return json({ error: "Stripe signature required." }, 400, requestId);
     }
+    if (!hasJsonContentType(request)) {
+      return json({ error: "Content-Type must be application/json." }, 415, requestId);
+    }
 
-    const rawBody = await request.text();
+    let rawBody: string;
+    try {
+      rawBody = await readLimitedRequestText(request, 256 * 1024);
+    } catch (error) {
+      return error instanceof RequestBodyTooLargeError
+        ? json({ error: "Webhook payload is too large." }, 413, requestId)
+        : json({ error: "Webhook payload is invalid." }, 400, requestId);
+    }
     let event: Stripe.Event;
     try {
       event = dependencies.stripe().webhooks.constructEvent(
