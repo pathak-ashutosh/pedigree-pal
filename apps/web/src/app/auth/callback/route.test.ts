@@ -10,6 +10,9 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
 vi.mock("@/lib/server/logger", () => ({
   logger: { info: mocks.info, warn: mocks.warn },
 }));
+vi.mock("@/lib/env", () => ({
+  getPublicEnv: () => ({ NEXT_PUBLIC_APP_URL: "https://app.example.test" }),
+}));
 
 import { GET } from "./route";
 
@@ -47,7 +50,7 @@ describe("auth callback", () => {
   });
 
   it("rejects callbacks without a code", async () => {
-    const response = await GET(new Request("https://app.example.test/auth/callback"));
+    const response = await GET(new Request("https://attacker.example.test/auth/callback"));
 
     expect(mocks.createClient).not.toHaveBeenCalled();
     expect(response.headers.get("location")).toBe("https://app.example.test/login?error=auth");

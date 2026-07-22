@@ -83,7 +83,7 @@ describe("auth actions", () => {
     expect(mocks.info).toHaveBeenCalledWith({ event: "auth.magic_link.sent" }, "magic link sent");
   });
 
-  it("prefers the request origin from forwarded headers over the env fallback", async () => {
+  it("ignores spoofed forwarded origins", async () => {
     mocks.requestHeaders.value = new Headers({
       "x-forwarded-proto": "https",
       "x-forwarded-host": "pedigree-pal.vercel.app",
@@ -95,7 +95,7 @@ describe("auth actions", () => {
     expect(signInWithOtp).toHaveBeenCalledWith(
       expect.objectContaining({
         options: expect.objectContaining({
-          emailRedirectTo: "https://pedigree-pal.vercel.app/auth/callback?next=/dashboard",
+          emailRedirectTo: "https://app.example.test/auth/callback?next=/dashboard",
         }),
       }),
     );

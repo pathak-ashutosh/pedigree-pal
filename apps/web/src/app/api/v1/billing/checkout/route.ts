@@ -5,7 +5,13 @@ import { getOptionalOrganizationAccess } from "@/lib/organizations/dal";
 import { getStripe } from "@/lib/billing/stripe";
 import { hashRequestPayload, parseIdempotencyKey } from "@/lib/server/idempotency";
 import { logger } from "@/lib/server/logger";
-import { getRequestId } from "@/lib/server/request";
+import { hasTrustedOrigin } from "@/lib/server/origin";
+import {
+  getRequestId,
+  hasJsonContentType,
+  readLimitedRequestText,
+  RequestBodyTooLargeError,
+} from "@/lib/server/request";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const checkoutSchema = z.object({
@@ -37,12 +43,26 @@ export function createCheckoutHandler(
 
   return async function POST(request: Request): Promise<Response> {
     const requestId = dependencies.requestId(request);
+    const publicEnv = dependencies.publicEnv();
+    if (!hasTrustedOrigin(request, publicEnv.NEXT_PUBLIC_APP_URL)) {
+      return json({ error: "Request origin is not allowed." }, 403, requestId);
+    }
+    if (!hasJsonContentType(request)) {
+      return json({ error: "Content-Type must be application/json." }, 415, requestId);
+    }
     const idempotencyKey = parseIdempotencyKey(request.headers.get("idempotency-key"));
     if (!idempotencyKey) {
       return json({ error: "A valid Idempotency-Key header is required." }, 400, requestId);
     }
 
-    const rawBody = await request.text();
+    let rawBody: string;
+    try {
+      rawBody = await readLimitedRequestText(request, 8 * 1024);
+    } catch (error) {
+      return error instanceof RequestBodyTooLargeError
+        ? json({ error: "Checkout request is too large." }, 413, requestId)
+        : json({ error: "Invalid checkout request." }, 400, requestId);
+    }
     let input;
     try {
       input = checkoutSchema.parse(JSON.parse(rawBody));
@@ -131,7 +151,7 @@ export function createCheckoutHandler(
       }
 
       const billingEnv = dependencies.billingEnv();
-      const appUrl = dependencies.publicEnv().NEXT_PUBLIC_APP_URL;
+      const appUrl = publicEnv.NEXT_PUBLIC_APP_URL;
       const price = input.plan === "starter"
         ? billingEnv.STRIPE_PRICE_STARTER
         : billingEnv.STRIPE_PRICE_PRO;

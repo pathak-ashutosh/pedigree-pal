@@ -1,9 +1,16 @@
 import { z } from "zod";
 
+const httpUrlSchema = z.url().refine((value) => {
+  const url = new URL(value);
+  return (url.protocol === "http:" || url.protocol === "https:")
+    && !url.username
+    && !url.password;
+}, "URL must use HTTP(S) and cannot contain credentials.").transform((value) => new URL(value).origin);
+
 const publicEnvSchema = z.object({
-  NEXT_PUBLIC_SUPABASE_URL: z.url(),
+  NEXT_PUBLIC_SUPABASE_URL: httpUrlSchema,
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(20),
-  NEXT_PUBLIC_APP_URL: z.url().default("http://localhost:3000"),
+  NEXT_PUBLIC_APP_URL: httpUrlSchema.default("http://localhost:3000"),
 });
 
 const serverEnvSchema = z.object({

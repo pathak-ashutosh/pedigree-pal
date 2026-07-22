@@ -1,39 +1,52 @@
-import { originFromHeaders } from "./origin";
+import { canonicalOrigin, hasCanonicalHost, hasTrustedOrigin, originFromHeaders } from "./origin";
 
 const fallback = "https://fallback.example.test";
 
 describe("originFromHeaders", () => {
-  it("derives the origin from forwarded headers", () => {
+  it("ignores untrusted forwarded headers", () => {
     const headers = new Headers({
       "x-forwarded-proto": "https",
-      "x-forwarded-host": "pedigree-pal.vercel.app",
+      "x-forwarded-host": "attacker.example.test",
     });
-    expect(originFromHeaders(headers, fallback)).toBe("https://pedigree-pal.vercel.app");
-  });
-
-  it("uses the host header when no forwarded host is present", () => {
-    const headers = new Headers({
-      "x-forwarded-proto": "http",
-      host: "localhost:3000",
-    });
-    expect(originFromHeaders(headers, fallback)).toBe("http://localhost:3000");
-  });
-
-  it("takes the first value of comma-separated forwarded headers", () => {
-    const headers = new Headers({
-      "x-forwarded-proto": "https, http",
-      "x-forwarded-host": "app.example.test, proxy.internal",
-    });
-    expect(originFromHeaders(headers, fallback)).toBe("https://app.example.test");
-  });
-
-  it("falls back when the forwarded proto is missing", () => {
-    const headers = new Headers({ host: "app.example.test" });
     expect(originFromHeaders(headers, fallback)).toBe(fallback);
   });
 
-  it("falls back when no host is present", () => {
-    const headers = new Headers({ "x-forwarded-proto": "https" });
-    expect(originFromHeaders(headers, fallback)).toBe(fallback);
+  it("normalizes the configured origin", () => {
+    expect(originFromHeaders(new Headers(), `${fallback}/some/path?ignored=true`)).toBe(fallback);
+    expect(() => canonicalOrigin("ftp://fallback.example.test")).toThrow(/HTTP or HTTPS/);
+  });
+});
+
+describe("request origin validation", () => {
+  it("accepts only the configured host", () => {
+    expect(hasCanonicalHost(new Headers({ host: "fallback.example.test" }), fallback)).toBe(true);
+    expect(hasCanonicalHost(new Headers({
+      host: "fallback.example.test",
+      "x-forwarded-host": "fallback.example.test",
+    }), fallback)).toBe(true);
+    expect(hasCanonicalHost(new Headers({ host: "attacker.example.test" }), fallback)).toBe(false);
+    expect(hasCanonicalHost(new Headers({
+      host: "attacker.example.test",
+      "x-forwarded-host": "fallback.example.test",
+    }), fallback)).toBe(false);
+    expect(hasCanonicalHost(new Headers({
+      host: "fallback.example.test",
+      "x-forwarded-host": "fallback.example.test, attacker.example.test",
+    }), fallback)).toBe(false);
+    expect(hasCanonicalHost(new Headers(), fallback)).toBe(false);
+    expect(hasCanonicalHost(new Headers({ host: "user@fallback.example.test" }), fallback)).toBe(false);
+  });
+
+  it("requires an exact Origin match", () => {
+    const trusted = new Request(`${fallback}/checkout`, { headers: { origin: fallback } });
+    const untrusted = new Request(`${fallback}/checkout`, {
+      headers: { origin: "https://attacker.example.test" },
+    });
+    expect(hasTrustedOrigin(trusted, fallback)).toBe(true);
+    expect(hasTrustedOrigin(untrusted, fallback)).toBe(false);
+    expect(hasTrustedOrigin(new Request(`${fallback}/checkout`), fallback)).toBe(false);
+    expect(hasTrustedOrigin(new Request(`${fallback}/checkout`, {
+      headers: { origin: "not a URL" },
+    }), fallback)).toBe(false);
   });
 });

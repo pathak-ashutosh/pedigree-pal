@@ -7,10 +7,23 @@
 ## Required production configuration
 
 - Public: app URL, Supabase URL/publishable key
-- Server: Supabase service-role key, Stripe secret/webhook secret/price IDs
+- Server: Supabase service-role key, Stripe secret/webhook secret/price IDs,
+  stable base64-encoded 32-byte `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`
 - Operations: `LOG_LEVEL`, immutable `RELEASE_SHA`
 
 Never expose service-role or Stripe values to `NEXT_PUBLIC_*`.
+`NEXT_PUBLIC_APP_URL` is the canonical security boundary: use one HTTPS origin,
+with no path. Requests for other hosts are rejected.
+
+Before production traffic:
+
+1. Allow only the exact canonical callback URL in Supabase Auth; remove preview
+   and wildcard redirect URLs.
+2. Enable Supabase Auth CAPTCHA and rate limits for magic-link requests.
+3. Put API and auth routes behind host-level DDoS/rate-limit controls.
+4. Require phishing-resistant MFA for Supabase, Stripe, hosting, DNS, and GitHub.
+5. Use managed secrets, database PITR, encrypted backups, and tested restores.
+6. Keep production logs free of request bodies, credentials, and personal data.
 
 ## Release order
 
@@ -57,6 +70,7 @@ For demos, portfolios, and pre-revenue MVPs. Cost: $0.
    | `STRIPE_PRICE_PRO` | Server only | `price_…` |
    | `LOG_LEVEL` | Server only | `info` |
    | `RELEASE_SHA` | Server only | Deploy commit SHA (Vercel exposes `VERCEL_GIT_COMMIT_SHA`) |
+   | `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | Server only | Stable base64-encoded 32-byte key |
 
 4. **Stripe:** add a webhook endpoint at `https://<app-url>/api/v1/webhooks/stripe`, subscribe to the checkout/subscription events the app handles, and copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
 5. **Keep Supabase awake:** set repository variable `APP_URL` to the deployed URL. `.github/workflows/keepalive.yml` pings `/api/ready` (a real database query) every 2 days.

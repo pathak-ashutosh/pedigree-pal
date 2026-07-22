@@ -24,7 +24,10 @@ function query(result: unknown = { data: null, error: null }): Query {
 function webhookRequest(signature = "valid_signature"): Request {
   return new Request("https://app.example.test/api/v1/webhooks/stripe", {
     method: "POST",
-    headers: signature ? { "stripe-signature": signature } : {},
+    headers: {
+      "content-type": "application/json",
+      ...(signature ? { "stripe-signature": signature } : {}),
+    },
     body: JSON.stringify({ id: "evt_1" }),
   });
 }
@@ -91,6 +94,21 @@ function setup({
 }
 
 describe("Stripe webhook API", () => {
+  it("rejects non-JSON and oversized payloads before verification", async () => {
+    const wrongType = webhookRequest();
+    wrongType.headers.set("content-type", "text/plain");
+    const current = setup();
+    expect((await current.handler(wrongType)).status).toBe(415);
+
+    const oversized = new Request("https://app.example.test/api/v1/webhooks/stripe", {
+      method: "POST",
+      headers: { "content-type": "application/json", "stripe-signature": "sig" },
+      body: "x".repeat(256 * 1024 + 1),
+    });
+    expect((await current.handler(oversized)).status).toBe(413);
+    expect(current.constructEvent).not.toHaveBeenCalled();
+  });
+
   it("requires and verifies the provider signature", async () => {
     const missing = setup();
     expect((await missing.handler(webhookRequest(""))).status).toBe(400);

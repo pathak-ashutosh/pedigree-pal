@@ -2,6 +2,12 @@ import { NextRequest } from "next/server";
 import { vi } from "vitest";
 
 type CookieOptions = {
+  cookieOptions: {
+    httpOnly: boolean;
+    sameSite: string;
+    secure: boolean;
+    path: string;
+  };
   cookies: {
     getAll: () => unknown;
     setAll: (values: Array<{ name: string; value: string; options: Record<string, unknown> }>) => void;
@@ -13,6 +19,7 @@ const mocks = vi.hoisted(() => ({ createServerClient: vi.fn(), getClaims: vi.fn(
 vi.mock("@supabase/ssr", () => ({ createServerClient: mocks.createServerClient }));
 vi.mock("@/lib/env", () => ({
   getPublicEnv: () => ({
+    NEXT_PUBLIC_APP_URL: "https://app.example.test",
     NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "publishable-test-key-12345",
   }),
@@ -39,6 +46,12 @@ describe("session Proxy", () => {
     const response = await updateSession(new NextRequest("https://app.example.test/dashboard"));
 
     expect(response.cookies.get("session")?.value).toBe("refreshed");
+    expect(mocks.createServerClient.mock.calls[0]?.[2].cookieOptions).toEqual({
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false,
+      path: "/",
+    });
     expect(mocks.createServerClient).toHaveBeenCalledWith(
       "https://example.supabase.co",
       "publishable-test-key-12345",
