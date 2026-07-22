@@ -5,7 +5,7 @@ afterEach(() => vi.unstubAllEnvs());
 
 describe("health endpoint", () => {
   it("returns identity, correlation, and no-store headers", async () => {
-    vi.stubEnv("RELEASE_SHA", "");
+    vi.stubEnv("RELEASE_SHA", "development");
     vi.stubEnv("VERCEL_GIT_COMMIT_SHA", "deployed-commit");
     const info = vi.fn();
     const times = [100, 107];
@@ -31,9 +31,9 @@ describe("health endpoint", () => {
     );
   });
 
-  it("prefers an explicitly configured release", async () => {
+  it("uses an explicit release outside Vercel", async () => {
     vi.stubEnv("RELEASE_SHA", "configured-release");
-    vi.stubEnv("VERCEL_GIT_COMMIT_SHA", "deployed-commit");
+    vi.stubEnv("VERCEL_GIT_COMMIT_SHA", "");
     const handler = createHealthHandler({ activeLogger: { info: vi.fn() } });
 
     await expect(
