@@ -24,12 +24,21 @@ jobs:
         env:
           APP_URL: ${{ vars.APP_URL }}
         run: |
+          # Fail loudly. A skip here reports green and hides a paused database.
           if [ -z "$APP_URL" ]; then
-            echo "APP_URL repository variable is not set; skipping." >&2
-            exit 0
+            echo "APP_URL repository variable is not set." >&2
+            echo "Set it with: gh variable set APP_URL --body https://your-app.vercel.app" >&2
+            exit 1
           fi
           target="${APP_URL%/}/api/ready"
           echo "Pinging $target"
-          curl --fail --silent --show-error --location \
+          body=$(curl --fail --silent --show-error --location \
             --retry 5 --retry-delay 15 --retry-all-errors \
-            --max-time 60 "$target"
+            --max-time 60 "$target")
+          echo "$body"
+          # The probe returns 503 if the query fails. Check the body also, because
+          # an edge error page can return 200 without touching the database.
+          case "$body" in
+            *'"status":"ready"'*) ;;
+            *) echo "Readiness probe did not report ready." >&2; exit 1 ;;
+          esac
